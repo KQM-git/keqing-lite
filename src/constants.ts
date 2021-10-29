@@ -35,7 +35,7 @@ class _Constants {
     }
 
     get DEV_MODE(): boolean {
-        return this.fromEnvConfig('DEV_MODE') == '1'
+        return this.fromEnvConfig('DEV_MODE') == 1
     }
 
     fromEnvConfig(key: string): any {
