@@ -12,6 +12,11 @@ export default class WelcomeCommand implements Command {
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
+        if (!interaction.memberPermissions?.has('MANAGE_ROLES')) {
+            await interaction.reply({content: 'Unauthorized to use this command', ephemeral: true})
+            return
+        }
+
         await interaction.reply({
             content: 'Welcome to **Paperback**!',
             components: [

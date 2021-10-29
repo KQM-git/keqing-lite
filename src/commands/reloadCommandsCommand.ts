@@ -12,6 +12,11 @@ export default class ReloadCommandsCommand implements Command {
             .toJSON()
     }
     async execute(interaction: CommandInteraction): Promise<void> {
+        if (!interaction.memberPermissions?.has('MANAGE_ROLES')) {
+            await interaction.reply({content: 'Unauthorized to use this command', ephemeral: true})
+            return
+        }
+        
         await interaction.deferReply({ephemeral: true})
         await discordBot.loadCommands()
         await interaction.editReply('Reloaded commands!')
