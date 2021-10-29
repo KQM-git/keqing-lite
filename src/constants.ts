@@ -35,12 +35,12 @@ class _Constants {
     }
 
     get DEV_MODE(): boolean {
-        return this.fromEnvConfig('DEV_MODE')
+        return this.fromEnvConfig('DEV_MODE') == '1'
     }
 
     fromEnvConfig(key: string): any {
         const value = process.env[key]
-        if(value) return value
+        if(value !== undefined) return value
 
         console.log(`[FATAL] ENV VARIABLE "${key}" NOT PRESENT`)
         return ''
