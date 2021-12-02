@@ -23,15 +23,15 @@ export default class WelcomeCommand implements Command {
                 new MessageActionRow()
                     .addComponents(
                         new MessageButton()
-                            .setLabel('I Need Help')
+                            .setLabel('I need Help')
                             .setCustomId('selfHelpInteraction')
+                            .setStyle('SUCCESS'),
+                        new MessageButton()
+                            .setLabel('Open Support Thread')
+                            .setCustomId('supportThreadConfirmationInteraction')
                             .setStyle('PRIMARY'),
                         new MessageButton()
-                            .setLabel('My Issue Isn\'t Listed')
-                            .setCustomId('supportThreadConfirmationInteraction')
-                            .setStyle('DANGER'),
-                        new MessageButton()
-                            .setLabel('I Want to Chat')
+                            .setLabel('I want to Chat')
                             .setCustomId('serverRulesAcknowledgementInteraction')
                             .setStyle('SECONDARY'),
                         new MessageButton()

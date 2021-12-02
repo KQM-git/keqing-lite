@@ -22,7 +22,7 @@ export default class SupportThreadConfirmationInteraction implements IExecutable
                         .addComponents([
                             new MessageButton()
                                 .setLabel('I Understand, Open Thread')
-                                .setStyle('SECONDARY')
+                                .setStyle('DANGER')
                                 .setCustomId('openSupportThreadInteraction'),
                             new MessageButton()
                                 .setLabel('Display Help Topics')
