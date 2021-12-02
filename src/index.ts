@@ -11,6 +11,8 @@ import fs from 'fs'
 import fsp from 'fs/promises'
 import { LocalInteractionManager } from './managers/interactionManager'
 import { LiveInteractionManager } from './managers/liveInteractionManager'
+import yaml from 'js-yaml'
+import path from 'path'
 
 class DiscordBotHandler {
     client = new Client({ intents: [Intents.FLAGS.GUILDS] })
@@ -21,6 +23,8 @@ class DiscordBotHandler {
 
     localInteractionManager = new LocalInteractionManager()
     liveInteractionManager = new LiveInteractionManager()
+
+    liveConstants: any | undefined = {}
 
     constructor() {
         console.log('Initialized a new Bot Handler')
@@ -37,11 +41,11 @@ class DiscordBotHandler {
         this.client.on('interactionCreate', async interaction => {
             try {
                 if (interaction.isCommand()) {
-                    const CommandClass = 
-                    this.localCommandManager.resolveLocalCommand(interaction.commandName) ??
-                    this.liveCommandManager.resolveLiveCommand(interaction.commandName)
+                    const CommandClass =
+                        this.localCommandManager.resolveLocalCommand(interaction.commandName) ??
+                        this.liveCommandManager.resolveLiveCommand(interaction.commandName)
                     if (!CommandClass) return
-    
+
                     const commandInstance = new CommandClass()
                     await commandInstance.execute(interaction)
                 } else if (interaction.isButton() || interaction.isSelectMenu()) {
@@ -51,21 +55,40 @@ class DiscordBotHandler {
                     const executableInteractionInstance = new ExecutableInteractionClass()
                     await executableInteractionInstance.execute(interaction)
                 }
-            } catch(error) {
+            } catch (error) {
                 console.error(error)
                 if (!interaction.isCommand() && !interaction.isSelectMenu() && !interaction.isMessageComponent()) return
-                
-                await interaction.followUp({content: '**ERROR**: ' + error, ephemeral: true})
+
+                await interaction.followUp({ content: '**ERROR**: ' + error, ephemeral: true })
             }
         })
-        
-    
+
+
         // Login to Discord with your client's token
         this.client.login(Constants.DISCORD_BOT_TOKEN)
     }
 
     async loadCommands() {
         await this.downloadAndExtractLiveCommandRepo()
+
+        const liveConstantsPath = path.join(
+            Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
+            Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME,
+            'constants.yaml'
+        )
+
+        if (fs.existsSync(liveConstantsPath)) {
+            try {
+                this.liveConstants = await yaml.load(
+                    (await fsp.readFile(liveConstantsPath)).toString()
+                )
+            } catch(error: any) {
+                this.liveConstants = {}
+            }
+        } else {
+            this.liveConstants = {}
+        }
+        
 
         return this.registerCommands([
             ...await this.liveCommandManager.getLiveCommands(),
@@ -76,11 +99,11 @@ class DiscordBotHandler {
     async registerCommands(commands: RESTPatchAPIApplicationCommandJSONBody[]) {
         const hashSet: Record<string, RESTPatchAPIApplicationCommandJSONBody> = {}
         for (const command of commands) {
-            if(!command.name) continue
+            if (!command.name) continue
             hashSet[command.name] = command
         }
 
-        if(Constants.DEV_MODE) {
+        if (Constants.DEV_MODE) {
             await this.restClient.put(Routes.applicationGuildCommands(Constants.DISCORD_CLIENT_ID, Constants.DISCORD_DEV_GUILD_ID), { body: Object.values(hashSet) })
         } else {
             await this.restClient.put(Routes.applicationGuildCommands(Constants.DISCORD_CLIENT_ID, Constants.DISCORD_GUILD_ID), { body: Object.values(hashSet) })
@@ -92,7 +115,7 @@ class DiscordBotHandler {
 
         if (fs.existsSync(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR))
             await fsp.rm(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, { recursive: true, force: true })
-            
+
         if (fs.existsSync(downloadFilePath))
             await fsp.rm(downloadFilePath)
 
@@ -109,36 +132,36 @@ class DiscordBotHandler {
 
     private async download(url: string, filePath: string) {
         const proto = https
-      
+
         return new Promise((resolve, reject) => {
             const file = fs.createWriteStream(filePath)
             let fileInfo: unknown = null
-      
+
             const request = proto.get(url, response => {
                 if (response.statusCode !== 200) {
                     reject(new Error(`Failed to get '${url}' (${response.statusCode})`))
                     return
                 }
-      
+
                 fileInfo = {
                     mime: response.headers['content-type'],
                     size: parseInt(response.headers['content-length'] ?? '', 10),
                 }
-      
+
                 response.pipe(file)
             })
-      
+
             // The destination stream is ended by the time it's called
             file.on('finish', () => resolve(fileInfo))
-      
+
             request.on('error', err => {
                 fs.unlink(filePath, () => reject(err))
             })
-      
+
             file.on('error', err => {
                 fs.unlink(filePath, () => reject(err))
             })
-      
+
             request.end()
         })
     }

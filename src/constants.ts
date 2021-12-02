@@ -38,6 +38,14 @@ class _Constants {
         return this.fromEnvConfig('DEV_MODE') == 1
     }
 
+    get SUPPORT_CHANNEL_ID(): string {
+        return this.fromEnvConfig('SUPPORT_CHANNEL_ID')
+    }
+
+    get MEMBER_ROLE_ID(): string {
+        return this.fromEnvConfig('MEMBER_ROLE_ID')
+    }
+
     fromEnvConfig(key: string): any {
         const value = process.env[key]
         if(value !== undefined) return value

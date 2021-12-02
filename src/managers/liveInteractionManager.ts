@@ -4,6 +4,8 @@ import { LiveInteraction, LiveCommandManager } from './liveCommandManager'
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { CommandInteractionOptionResolver } from 'discord.js'
+import { substituteTemplateLiterals } from '../utils'
+import { discordBot } from '..'
 
 export class LiveInteractionManager {
     static liveInteractionsDir = path.join(
@@ -18,7 +20,9 @@ export class LiveInteractionManager {
 
             if (!fs.existsSync(interactionPath)) return undefined
 
-            return yaml.load(fs.readFileSync(interactionPath).toString()) as LiveInteraction | undefined
+            return yaml.load(
+                substituteTemplateLiterals(discordBot.liveConstants, fs.readFileSync(interactionPath).toString())
+            ) as LiveInteraction | undefined
         } catch(error) {
             console.error(error)
             return undefined

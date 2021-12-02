@@ -13,11 +13,17 @@ import { MessageButtonOptions, MessageEmbedOptions, MessageSelectOptionData } fr
 import { IExecutableCommand } from '../commands/command'
 import LiveCommand from '../commands/liveCommand'
 
+export interface LiveInteractionPermissions {
+    blacklist?: string[]
+    whitelist?: string[]
+}
+
 export interface LiveInteraction {
     content?: string
     options?: MessageSelectOptionData[]
     embeds?: MessageEmbedOptions[]
     buttons?: MessageButtonOptions[]
+    permissions?: LiveInteractionPermissions
 }
 
 export class LiveCommandManager {

@@ -13,7 +13,7 @@ export default class WelcomeCommand implements Command {
 
     async execute(interaction: CommandInteraction): Promise<void> {
         if (!interaction.memberPermissions?.has('MANAGE_ROLES')) {
-            await interaction.reply({content: 'Unauthorized to use this command', ephemeral: true})
+            await interaction.reply({ content: 'Unauthorized to use this command', ephemeral: true })
             return
         }
 
@@ -26,6 +26,14 @@ export default class WelcomeCommand implements Command {
                             .setLabel('I Need Help')
                             .setCustomId('selfHelpInteraction')
                             .setStyle('PRIMARY'),
+                        new MessageButton()
+                            .setLabel('My Issue Isn\'t Listed')
+                            .setCustomId('supportThreadConfirmationInteraction')
+                            .setStyle('DANGER'),
+                        new MessageButton()
+                            .setLabel('I Want to Chat')
+                            .setCustomId('serverRulesAcknowledgementInteraction')
+                            .setStyle('SECONDARY'),
                         new MessageButton()
                             .setLabel('Support On Patreon')
                             .setStyle('LINK')
