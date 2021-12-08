@@ -15,7 +15,7 @@ import yaml from 'js-yaml'
 import path from 'path'
 
 class DiscordBotHandler {
-    client = new Client({ intents: [Intents.FLAGS.GUILDS] })
+    client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] })
     restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
 
     localCommandManager = new LocalCommandManager()
@@ -36,6 +36,28 @@ class DiscordBotHandler {
         // When the client is ready, run this code (only once)
         this.client.once('ready', () => {
             console.log('Ready!')
+        })
+
+        this.client.on('threadUpdate', async (oldThread, newThread) => {
+            if (oldThread.archived || !newThread.archived) { return }
+            if (Constants.SUPPORT_CHANNEL_ID != newThread.parentId) { return }
+
+            try {
+                const starterMessage = await newThread.fetchStarterMessage()
+                await starterMessage.delete()
+            } catch(error: any) {
+                console.error(error)
+            }
+        })
+
+        this.client.on('messageCreate', async message => {
+            if (!message.channel.isThread()) { return }
+            if (message.member?.user.bot) { return }
+            if (message.channel.autoArchiveDuration != 60) { return }
+            if (Constants.SUPPORT_CHANNEL_ID != message.channel.parentId) { return }
+
+            await message.channel.send({content: 'Setting archive duration to **24** hours due to activity'})
+            await message.channel.setAutoArchiveDuration(1440)
         })
 
         this.client.on('interactionCreate', async interaction => {

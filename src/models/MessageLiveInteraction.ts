@@ -54,7 +54,7 @@ export class MessageLiveInteraction {
         }
 
         if (this.liveInteraction.options && this.liveInteraction.options.length > 0) {
-            message.components?.push(
+            message.components?.unshift(
                 new MessageActionRow()
                     .addComponents(
                         new MessageSelectMenu()

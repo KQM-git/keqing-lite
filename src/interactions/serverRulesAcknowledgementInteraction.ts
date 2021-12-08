@@ -1,4 +1,4 @@
-import { GuildMember, Interaction, MessageActionRow, MessageButton, MessageComponentInteraction, MessageInteraction, User } from "discord.js";
+import { GuildMember, Interaction, MessageActionRow, MessageButton, MessageComponentInteraction, MessageFlags, MessageInteraction, User } from "discord.js";
 import { discordBot } from "..";
 import { Constants } from "../constants";
 import { MessageLiveInteraction } from "../models/MessageLiveInteraction";
@@ -11,7 +11,6 @@ export default class ServerRulesAcknowledgementInteraction implements IExecutabl
         }
 
         const metadata = interaction.customId.split('#')
-        console.log(metadata)
         if (metadata.length > 1 && metadata[0] === 'serverRulesAcknowledgementInteraction') {
             await interaction.update({ components: [] })
 
@@ -37,7 +36,11 @@ export default class ServerRulesAcknowledgementInteraction implements IExecutabl
             return
         }
 
-        await interaction.deferReply({ ephemeral: true })
+        if ((interaction.message.flags?.valueOf() ?? 0) & MessageFlags.resolve('EPHEMERAL')) {
+            await interaction.deferUpdate()
+        } else {
+            await interaction.deferReply({ephemeral: true})
+        }
 
         const liveInteraction = discordBot.liveInteractionManager.resolveLiveInteraction('serverRulesAcknowledgement')
         if (!liveInteraction) {

@@ -24,15 +24,8 @@ export default class ArchiveThreadCommand implements Command {
             return
         }
 
-        try {
-            const message = await interaction.channel.fetchStarterMessage()
-            await message.delete()
-        } catch (error: any) {
-            console.error(error)
-            interaction.editReply('Unable to delete starter message.')
-        }
-
-        await interaction.editReply('Deleted starter message and archived thread.')
+        await interaction.channel.send({ content: `Thread Archived by <@${interaction.user.id}>` })
+        await interaction.channel.setLocked(true)
         await interaction.channel.setArchived(true)
     }
 }
