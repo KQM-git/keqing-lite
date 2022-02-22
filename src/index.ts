@@ -47,7 +47,7 @@ class DiscordBotHandler {
 
         this.client.on('guildMemberAdd', async (member) => {
             console.log('kekw someone joined')
-            const welcomeChannelId = this.liveConfig.modules?.verification?.welcome_channel
+            const welcomeChannelId = this.liveConfig.modules?.verification?.welcomeChannel
             if (welcomeChannelId) {
                 const channel = this.client.channels.cache.get(welcomeChannelId)
                 if(channel && channel.isText())
@@ -246,7 +246,7 @@ class DiscordBotHandler {
     }
 
     async sendWelcomeMessage(channel: TextBasedChannel) {
-        const liveInteractionId = discordBot.liveConfig.modules?.verification?.interactions?.initial_message
+        const liveInteractionId = discordBot.liveConfig.modules?.verification?.interactions?.initialMessageInteractionPath
         if (!liveInteractionId) {
             await channel.send('**ERROR:** `interactions.initial_message` not set')
             return
