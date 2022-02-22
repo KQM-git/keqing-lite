@@ -4,28 +4,46 @@ export interface LiveConfig {
 
 export interface Modules {
     verification?: VerificationModule;
+    supportThreads?: SupportThreadsModule
+}
+
+export interface SupportThreadsModule {
+    permission?: string
+    configs?: { [x: string]: SupportThreadConfigs }
+}
+
+export interface SupportThreadConfigs {
+    displayInteractionPath?: string
+
+    supportThreadConfirmationInteractionPath?: string
+    supportThreadDisplayInteractionPath?: string
+    supportThreadChannel?: string
+    supportThreadButton?: LiveButtonConfig
+    
+    troubleshootInteractionPath?: string
+    troubleshootButton?: LiveButtonConfig
 }
 
 export interface VerificationModule {
-    welcome_channel?: string
     permission?: string
-    verified_role?: string
+    welcomeChannel?: string
+    verifiedRole?: string
 
     interactions?: {
-        initial_message?: string
-        rules_acknowledgement?: string
+        initialMessageInteractionPath?: string
+        rulesAcknowledgementInteractionPath?: string
     }
 
-    button?: Button
-    links?: Link[]
+    button?: LiveButtonConfig
+    links?: LiveLinkConfig[]
 }
 
-export interface Button {
+export interface LiveButtonConfig {
     title?: string;
     type?: 'PRIMARY' | 'SECONDARY' | 'DANGER' | 'SUCCESS';
 }
 
-export interface Link {
+export interface LiveLinkConfig {
     title?: string;
     target?: string;
     emote?: string;
