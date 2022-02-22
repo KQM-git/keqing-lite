@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, SlashCommandStringOption, SlashCommandSubcommandBuilder } from '@discordjs/builders'
+import { SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandStringOption, SlashCommandSubcommandBuilder } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
 
 import { CommandInteraction, MessagePayload } from 'discord.js'
@@ -6,36 +6,34 @@ import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 import { Command } from './command'
 
-export default class LiveCommand implements Command {
+export default class LiveInteractionCommand implements Command {
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
         return new SlashCommandBuilder()
-            .setName('livecommand')
-            .setDescription('Try to execute a live command. The command MUST be loaded')
+            .setName('liveinteraction')
+            .setDescription('Try to display a loaded interaction')
             .addStringOption(
                 new SlashCommandStringOption()
-                    .setName('command')
-                    .setDescription('Name of the live command')
+                    .setName('interaction')
+                    .setDescription('path to the interaction')
                     .setRequired(true)
+            )
+            .addBooleanOption(
+                new SlashCommandBooleanOption()
+                    .setName('ephemeral')
+                    .setDescription('Ephemeral or not')
+                    .setRequired(false)
             )
             .toJSON()
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
-        await interaction.deferReply()
-        let liveCommandName: string | null = interaction.commandName
-        
-        if(liveCommandName == 'livecommand') {
-            liveCommandName = interaction.options.getString('command')
-        }
+        await interaction.deferReply({
+            ephemeral: interaction.options.getBoolean('ephemeral') ?? true
+        })
 
-        if(!liveCommandName){
-            await interaction.editReply('**ERROR:** Unable to resolve live command name')
-            return
-        }
-
-        const liveInteractionId = discordBot.liveCommandManager.resolveLiveCommandInteractionId(liveCommandName)
+        const liveInteractionId = interaction.options.getString('interaction')
         if(!liveInteractionId) {
-            await interaction.editReply('**ERROR:** Unable to parse live interaction ID for live command ' + liveCommandName)
+            await interaction.editReply('**ERROR:** No interaction id set')
             return
         }
 

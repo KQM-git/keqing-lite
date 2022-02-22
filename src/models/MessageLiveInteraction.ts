@@ -27,7 +27,10 @@ export class MessageLiveInteraction {
     }
 
     async replyToInteraction(interaction: Interaction, content: MessageOptions | InteractionReplyOptions = {}): Promise<void> {
-        if (!interaction.isMessageComponent()) return
+        if (!interaction.isMessageComponent() && !interaction.isCommand()) {
+            console.log('interaction not a message component')
+            return
+        }
 
         if (!this.userIsAllowedToExecute(interaction.member as GuildMember)){
             if (interaction.replied || interaction.deferred) {
@@ -39,8 +42,10 @@ export class MessageLiveInteraction {
         }
 
         if (interaction.replied || interaction.deferred) {
+            console.log('editing reply')
             await interaction.editReply(this.toMessage(content))
         } else {
+            console.log('replying')
             await interaction.reply(this.toMessage(content))
         }
     }
@@ -51,6 +56,21 @@ export class MessageLiveInteraction {
             embeds: this.liveInteraction.embeds ?? [],
             components: [],
             ...content
+        }
+
+        const buttons = <MessageButton[]>this.liveInteraction.buttons?.map(button => {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            if (!button.url) return undefined
+
+            return new MessageButton(button)
+        }).filter(x => x)
+
+        if (buttons && buttons.length > 0) {
+            message.components?.unshift(
+                new MessageActionRow()
+                    .addComponents(buttons)
+            )
         }
 
         if (this.liveInteraction.options && this.liveInteraction.options.length > 0) {
@@ -64,21 +84,6 @@ export class MessageLiveInteraction {
                             .setPlaceholder('Topic')
                             .addOptions(this.liveInteraction.options)
                     )
-            )
-        }
-
-        const buttons = <MessageButton[]>this.liveInteraction.buttons?.map(button => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            if (!button.url) return undefined
-
-            return new MessageButton(button)
-        }).filter(x => x)
-
-        if (buttons && buttons.length > 0) {
-            message.components?.push(
-                new MessageActionRow()
-                    .addComponents(buttons)
             )
         }
 

@@ -2,7 +2,7 @@
 import { REST } from '@discordjs/rest'
 import AdmZip from 'adm-zip'
 import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { Client, Intents } from 'discord.js'
+import { Client, CommandInteraction, Intents, MessageActionRow, MessageButton, TextBasedChannel, TextChannel } from 'discord.js'
 import { https } from 'follow-redirects'
 import { Constants } from './constants'
 import { LocalCommandManager } from './managers/commandManager'
@@ -13,9 +13,13 @@ import { LocalInteractionManager } from './managers/interactionManager'
 import { LiveInteractionManager } from './managers/liveInteractionManager'
 import yaml from 'js-yaml'
 import path from 'path'
+import { substituteTemplateLiterals } from './utils'
+import { LiveConfig } from './models/LiveConfig'
+import { MessageLiveInteraction } from './models/MessageLiveInteraction'
+import { LiveTriggerManager } from './managers/triggerManager'
 
 class DiscordBotHandler {
-    client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] })
+    client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MEMBERS] })
     restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
 
     localCommandManager = new LocalCommandManager()
@@ -24,7 +28,10 @@ class DiscordBotHandler {
     localInteractionManager = new LocalInteractionManager()
     liveInteractionManager = new LiveInteractionManager()
 
+    liveTriggerManager = new LiveTriggerManager()
+
     liveConstants: any | undefined = {}
+    liveConfig: LiveConfig = {}
 
     constructor() {
         console.log('Initialized a new Bot Handler')
@@ -36,6 +43,16 @@ class DiscordBotHandler {
         // When the client is ready, run this code (only once)
         this.client.once('ready', () => {
             console.log('Ready!')
+        })
+
+        this.client.on('guildMemberAdd', async (member) => {
+            console.log('kekw someone joined')
+            const welcomeChannelId = this.liveConfig.modules?.verification?.welcomeChannel
+            if (welcomeChannelId) {
+                const channel = this.client.channels.cache.get(welcomeChannelId)
+                if(channel && channel.isText())
+                    await this.sendWelcomeMessage(channel)
+            }
         })
 
         this.client.on('threadUpdate', async (oldThread, newThread) => {
@@ -51,6 +68,8 @@ class DiscordBotHandler {
         })
 
         this.client.on('messageCreate', async message => {
+            await this.liveTriggerManager.parseMessage(message)
+
             if (!message.channel.isThread()) { return }
             if (message.member?.user.bot) { return }
             if (message.channel.autoArchiveDuration != 60) { return }
@@ -87,11 +106,26 @@ class DiscordBotHandler {
 
 
         // Login to Discord with your client's token
-        this.client.login(Constants.DISCORD_BOT_TOKEN)
+        await this.client.login(Constants.DISCORD_BOT_TOKEN)
+
+
     }
 
     async loadCommands() {
         await this.downloadAndExtractLiveCommandRepo()
+        await this.loadConstants()
+        await this.loadConfig()
+
+        await this.liveTriggerManager.loadTriggers()
+
+        return this.registerCommands([
+            ...await this.liveCommandManager.getLiveCommands(),
+            ...await this.localCommandManager.getLocalCommands()
+        ])
+    }
+
+    async loadConstants() {
+        this.liveConstants = {}
 
         const liveConstantsPath = path.join(
             Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
@@ -99,23 +133,46 @@ class DiscordBotHandler {
             'constants.yaml'
         )
 
-        if (fs.existsSync(liveConstantsPath)) {
-            try {
-                this.liveConstants = await yaml.load(
-                    (await fsp.readFile(liveConstantsPath)).toString()
-                )
-            } catch(error: any) {
-                this.liveConstants = {}
-            }
-        } else {
+        if (!fs.existsSync(liveConstantsPath)) {
+            return
+        }
+
+        try {
+            this.liveConstants = await yaml.load(
+                (await fsp.readFile(liveConstantsPath)).toString()
+            )
+
+            console.log(`loaded constants: ${JSON.stringify(this.liveConstants, null, 2)}`)
+        } catch(error: any) {
             this.liveConstants = {}
         }
-        
+    }
 
-        return this.registerCommands([
-            ...await this.liveCommandManager.getLiveCommands(),
-            ...await this.localCommandManager.getLocalCommands()
-        ])
+    async loadConfig() {
+        this.liveConfig = {}
+
+        const liveConfigPath = path.join(
+            Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
+            Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME,
+            'config.yaml'
+        )
+
+        if (!fs.existsSync(liveConfigPath)) {
+            return
+        }
+
+        try {
+            this.liveConfig = await yaml.load(
+                substituteTemplateLiterals(
+                    this.liveConstants,
+                    (await fsp.readFile(liveConfigPath)).toString()
+                ) 
+            ) as LiveConfig
+
+            console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
+        } catch(error: any) {
+            this.liveConfig = {}
+        }
     }
 
     async registerCommands(commands: RESTPatchAPIApplicationCommandJSONBody[]) {
@@ -186,6 +243,34 @@ class DiscordBotHandler {
 
             request.end()
         })
+    }
+
+    async sendWelcomeMessage(channel: TextBasedChannel) {
+        const liveInteractionId = discordBot.liveConfig.modules?.verification?.interactions?.initialMessageInteractionPath
+        if (!liveInteractionId) {
+            await channel.send('**ERROR:** `interactions.initial_message` not set')
+            return
+        }
+        
+        const liveInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(liveInteractionId)
+        if (!liveInteraction) {
+            await channel.send('**ERROR:** Unable to parse live interaction for id ' + liveInteractionId)
+            return
+        }
+
+        const message = new MessageLiveInteraction(liveInteraction)
+        await channel.send(message.toMessage({
+            components: [
+                new MessageActionRow()
+                    .addComponents(
+                        new MessageButton()
+                            .setCustomId('verificationInteraction')
+                            .setLabel(discordBot.liveConfig.modules?.verification?.button?.title ?? 'Verify')
+                            .setStyle(discordBot.liveConfig.modules?.verification?.button?.type ?? 'PRIMARY'),
+                    )
+                    
+            ]
+        }))
     }
 }
 
