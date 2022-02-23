@@ -59,10 +59,6 @@ export class MessageLiveInteraction {
         }
 
         const buttons = <MessageButton[]>this.liveInteraction.buttons?.map(button => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            if (!button.url) return undefined
-
             return new MessageButton(button)
         }).filter(x => x)
 
