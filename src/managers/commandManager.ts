@@ -33,7 +33,7 @@ export class LocalCommandManager {
         }).filter(x => x)
     }
 
-    resolveLocalCommand(name: string): (new () => Command) | undefined {
+    resolveLocalCommandClass(name: string): (new () => Command) | undefined {
         const commandPath = this.loadedCommands[name]
         if (!commandPath) return undefined
 

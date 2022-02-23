@@ -4,7 +4,7 @@ import { LiveInteraction, LiveCommandManager, LiveInteractionPermissions } from 
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { Collection, CommandInteractionOptionResolver, Message } from 'discord.js'
-import { substituteTemplateLiterals } from '../utils'
+import { constantsFromObject, substituteTemplateLiterals } from '../utils'
 import { discordBot } from '..'
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { RESTPatchAPIApplicationCommandJSONBody } from 'discord.js/node_modules/discord-api-types'
@@ -14,6 +14,7 @@ import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 interface LiveTrigger {
     match: string
     interaction: string
+    regexFlags: string
 
     channels?: LiveInteractionPermissions
 }
@@ -48,18 +49,32 @@ export class LiveTriggerManager {
 
         const content = message.content
         for (const [_, trigger] of this.loadedTriggers) {
-            const regex = new RegExp(trigger.match, 'g')
-            if (!regex.test(content)) continue
+            const regex = new RegExp(trigger.match, trigger.regexFlags ?? 'g')
+            const matches = regex.exec(content) ?? []
+
+            if (matches.length == 0) continue
+
+            const constants: any = {
+                '@MATCH': {}
+            }
+
+            let index = 0
+            for (const match of matches) {
+                constants['@MATCH'][`${index++}`] = match
+            }
 
             if (trigger.channels) {
                 if (trigger.channels?.blacklist) {
                     if (trigger.channels.blacklist.includes(message.channelId)) continue
                 } else if (trigger.channels?.whitelist) {
-                    if (trigger.channels.whitelist.includes(message.channelId)) continue
+                    if (!trigger.channels.whitelist.includes(message.channelId)) continue
                 }
             }
 
-            const interaction = discordBot.liveInteractionManager.resolveLiveInteraction(trigger.interaction)
+            const interaction = discordBot.liveInteractionManager.resolveLiveInteraction(
+                trigger.interaction,
+                { ...constantsFromObject(message.member), ...constants }
+            )
             if (!interaction) {
                 await message.reply({content: 'Unable to resolve interaction: ' + trigger})
                 continue
