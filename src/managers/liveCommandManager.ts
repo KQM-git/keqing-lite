@@ -30,7 +30,7 @@ export interface LiveInteraction {
 }
 
 export class LiveCommandManager {
-    private loadedCommands = new Collection<string, any>()
+    private loadedCommands = new Collection<string, string>()
 
     getLiveCommands(): RESTPatchAPIApplicationCommandJSONBody[] {
         this.loadedCommands.clear()
@@ -40,7 +40,9 @@ export class LiveCommandManager {
         const commands: SlashCommandBuilder[] = []
         const nestedCommands = new Collection<string, SlashCommandSubcommandsOnlyBuilder>()
 
-        for (const [key, value] of this.loadedCommands) {
+        for (const [key, _] of this.loadedCommands) {
+            console.log('loading '+key)
+            const value = this.resolveLiveCommand(key, undefined, {})
             const subcommands = key.split('/')
             const commandName = subcommands.shift()
             if(!commandName) continue
@@ -135,15 +137,12 @@ export class LiveCommandManager {
                 return
             }
 
-            const commandMetadata: any = yaml.load(
-                substituteTemplateLiterals(
-                    discordBot.liveConstants,
-                    fs.readFileSync(filePath).toString()
-                )
-            )
-            if (!commandMetadata || !commandMetadata.interaction) return
+            if (!file.endsWith('yaml')) return
             
-            this.loadedCommands.set([...dirs.map(this.parseCommandName), commandName].join('/'), commandMetadata)
+            this.loadedCommands.set(
+                [...dirs.map(this.parseCommandName), commandName].join('/'),
+                filePath
+            )
         })
     }
 
@@ -156,13 +155,20 @@ export class LiveCommandManager {
         return LiveCommand
     }
 
-    resolveLiveCommand(commandName: string, subcommand: string | undefined = undefined): any | undefined {
+    resolveLiveCommand(commandName: string, subcommand: string | undefined = undefined, constants: any): any | undefined {
         if (subcommand) {
             commandName = path.join(commandName, subcommand)
         }
 
         if (!this.loadedCommands.has(commandName)) return undefined
-        return this.loadedCommands.get(commandName)
+        const filePath = this.loadedCommands.get(commandName)!
+
+        return yaml.load(
+            substituteTemplateLiterals(
+                {...discordBot.liveConstants, ...constants},
+                fs.readFileSync(filePath).toString()
+            )
+        )
     }
 
     parseCommandName(str: string): string {

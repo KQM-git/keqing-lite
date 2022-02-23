@@ -15,8 +15,9 @@ export function substituteTemplateLiterals(constants: any, str: string): string 
 
             const templateVar = [...breadcrumb, key].join('.')
             const templateRegex = new RegExp(`{{\\s*?${templateVar}\\s*?}}`, 'g')
+            const templateRegex2 = new RegExp(`\\\${\\s*?${templateVar}\\s*?}`, 'g')
 
-            str = str.replace(templateRegex, obj[key])
+            str = str.replace(templateRegex, obj[key]).replace(templateRegex2, obj[key])
         })
 
         return str

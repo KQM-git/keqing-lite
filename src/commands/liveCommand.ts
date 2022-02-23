@@ -37,7 +37,7 @@ export default class LiveCommand implements Command {
         }
         
         const subcommand = interaction.options.getSubcommand(false) ?? undefined
-        const liveCommand: any = discordBot.liveCommandManager.resolveLiveCommand(liveCommandName, subcommand)
+        const liveCommand: any = discordBot.liveCommandManager.resolveLiveCommand(liveCommandName, subcommand, constants)
 
         await interaction.deferReply({ ephemeral: liveCommand?.ephemeral })
         if (interaction.member) {
