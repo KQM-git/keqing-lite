@@ -6,15 +6,7 @@ import { RoleKit, RoleKitsModule } from '../models/LiveConfig'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 import { Command } from './command'
 
-export default class RoleKitsCommand implements Command {
-    get moduleConfig(): RoleKitsModule | undefined {
-        return discordBot.liveConfig.modules?.roleKits
-    }
-
-    get roleKits(): Record<string, RoleKit> {
-        return this.moduleConfig?.kits ?? {}
-    }
-
+export default class RoleCommand implements Command {
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
         return new SlashCommandBuilder()
             .setName('role')
@@ -35,19 +27,11 @@ export default class RoleKitsCommand implements Command {
     async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply()
 
-        const permissionRole = this.moduleConfig?.permission
-        if (permissionRole) {
-            if (!(interaction.member as GuildMember)?.roles.cache.has(permissionRole)) {
-                await interaction.editReply(`Command restricted to <@${permissionRole}>`)
-                return
-            }
-        } else {
-            if (!interaction.memberPermissions?.has('MANAGE_ROLES')) {
-                await interaction.editReply('You are not authorized to use this command')
-                return
-            }
+        if (!interaction.memberPermissions?.has('MANAGE_ROLES')) {
+            await interaction.editReply('You are not authorized to use this command')
+            return
         }
-
+        
         const member = interaction.options.getMentionable('user', true) as GuildMember
         const role = interaction.options.getRole('role', true)
         if (member.roles.cache.has(role.id)) 
