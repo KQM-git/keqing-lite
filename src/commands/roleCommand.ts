@@ -34,9 +34,10 @@ export default class RoleCommand implements Command {
         
         const member = interaction.options.getMentionable('user', true) as GuildMember
         const role = interaction.options.getRole('role', true)
-        if (member.roles.cache.has(role.id)) 
+        if (member.roles.cache.has(role.id)) {
             await member.roles.remove(role.id)
             await interaction.editReply(`Successfully removed the role \`${role.name}\` from <@${member.id}>`)
+        }
         else {
             await member.roles.add(role.id)
             await interaction.editReply(`Successfully gave <@${member.id}> the role \`${role.name}\``)
