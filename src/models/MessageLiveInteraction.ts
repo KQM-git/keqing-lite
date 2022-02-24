@@ -1,29 +1,15 @@
 import { APIInteractionGuildMember } from 'discord-api-types'
 import { GuildMember, Interaction, InteractionReplyOptions, Message, MessageActionRow, MessageButton, MessageOptions, MessageSelectMenu } from 'discord.js'
 import { LiveInteraction } from '../managers/liveCommandManager'
+import { hasPermission } from '../utils'
 
 
 // @deprecated use LiveInteraction.asMessage()
 export class MessageLiveInteraction {
     constructor(public liveInteraction: LiveInteraction) { }
 
-    userIsAllowedToExecute(user: GuildMember | null): boolean {
-        if (!user || !user.roles || !user.roles.cache) {
-            if (this.liveInteraction.permissions?.blacklist || this.liveInteraction.permissions?.whitelist) return false
-            return true
-        }
-
-        const roles = user.roles.cache
-
-        if (this.liveInteraction.permissions?.blacklist) {
-            if (roles.hasAny(...(this.liveInteraction.permissions?.blacklist ?? []))) return false
-            else return true
-        } else if (this.liveInteraction.permissions?.whitelist) {
-            if (roles.hasAny(...(this.liveInteraction.permissions?.whitelist ?? []))) return true
-            else return false
-        }
-
-        return true
+    memberIsAllowedToExecute(member: GuildMember | null): boolean {
+        return hasPermission(this.liveInteraction.permissions, member)
     }
 
     async replyToInteraction(interaction: Interaction, content: MessageOptions | InteractionReplyOptions = {}): Promise<void> {
@@ -32,7 +18,7 @@ export class MessageLiveInteraction {
             return
         }
 
-        if (!this.userIsAllowedToExecute(interaction.member as GuildMember)){
+        if (!this.memberIsAllowedToExecute(interaction.member as GuildMember)){
             if (interaction.replied || interaction.deferred) {
                 await interaction.editReply({content: 'You don\'t have permission to execute this interaction.'})
             } else {

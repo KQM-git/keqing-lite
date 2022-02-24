@@ -3,10 +3,18 @@ import { RESTPostAPIApplicationCommandsJSONBody, ChannelType } from 'discord-api
 import { CommandInteraction, Guild, GuildMember, MessageActionRow, MessageButton } from 'discord.js'
 
 import { discordBot } from '..'
+import { SupportThreadConfigs, SupportThreadsModule } from '../models/LiveConfig'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 import { Command } from './command'
 
 export default class SupportCommand implements Command {
+    get moduleConfig(): SupportThreadsModule | undefined {
+        return discordBot.liveConfig.modules?.supportThreads
+    }
+
+    get threadConfigs(): Record<string, SupportThreadConfigs> {
+        return this.moduleConfig?.configs ?? {}
+    }
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
         
         return new SlashCommandBuilder()
@@ -16,14 +24,19 @@ export default class SupportCommand implements Command {
                 .setName('configname')
                 .setDescription('Config name for support threads.')
                 .setRequired(true)
+                .addChoices(
+                    Object.keys(this.threadConfigs)
+                        .map(key => [key, key])
+                )
             )
+            .setDefaultPermission(this.moduleConfig?.enabled ?? false)
             .toJSON()
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply()
 
-        const permissionRole = discordBot.liveConfig.modules?.supportThreads?.permission
+        const permissionRole = this.moduleConfig?.permission
         if (permissionRole) {
             if (!(interaction.member as GuildMember)?.roles.cache.has(permissionRole)) {
                 await interaction.editReply({ content: `Command restricted to <@&${permissionRole}>` })
@@ -37,7 +50,7 @@ export default class SupportCommand implements Command {
             return
         }
 
-        const config = discordBot.liveConfig.modules?.supportThreads?.configs?.[configName]
+        const config = this.moduleConfig?.configs?.[configName]
         if (!config) {
             await interaction.editReply('**ERROR:** Could not find the support thread config ' + configName)
             return

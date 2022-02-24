@@ -13,10 +13,11 @@ import { LocalInteractionManager } from './managers/interactionManager'
 import { LiveInteractionManager } from './managers/liveInteractionManager'
 import yaml from 'js-yaml'
 import path from 'path'
-import { constantsFromObject, substituteTemplateLiterals } from './utils'
+import { constantsFromObject, hasPermission, substituteTemplateLiterals } from './utils'
 import { LiveConfig } from './models/LiveConfig'
 import { MessageLiveInteraction } from './models/MessageLiveInteraction'
 import { LiveTriggerManager } from './managers/triggerManager'
+import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
 
 class DiscordBotHandler {
     client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MEMBERS] })
@@ -82,15 +83,30 @@ class DiscordBotHandler {
             })
 
             this.client.on('interactionCreate', async interaction => {
+                console.log('Interaction Created')
                 try {
-                    if (interaction.isCommand()) {
+                    if (interaction.isCommand() || interaction.isAutocomplete()) {
+                        const commandName = path.join(interaction.commandName, interaction.options.getSubcommand(false) ?? '')
+                        const commandPerms = this.liveConfig.permissions?.[commandName]
+                        if (commandPerms) {
+                            if (!hasPermission(commandPerms, interaction.member as GuildMember)) {
+                                if (interaction.isCommand())
+                                    await interaction.reply({ content: 'You don\'t have permission to execute this command', ephemeral: true })
+                                return
+                            }
+                        }
+
                         const CommandClass =
                             this.localCommandManager.resolveLocalCommandClass(interaction.commandName) ??
                             this.liveCommandManager.resolveLiveCommandClass(interaction.commandName, interaction.options.getSubcommand(false) ?? undefined)
                         if (!CommandClass) return
 
-                        const commandInstance = new CommandClass()
-                        await commandInstance.execute(interaction)
+                        const commandInstance: IExecutableCommand | IAutocompletableCommand = new CommandClass()
+
+                        if (interaction.isCommand() && (commandInstance as IExecutableCommand).execute)
+                            await (commandInstance as IExecutableCommand).execute(interaction)
+                        else if (interaction.isAutocomplete() && (commandInstance as IAutocompletableCommand).handleAutocomplete)
+                            await (commandInstance as IAutocompletableCommand).handleAutocomplete(interaction)
                     } else if (interaction.isButton() || interaction.isSelectMenu()) {
                         const ExecutableInteractionClass = this.localInteractionManager.resolveInteraction(interaction.customId)
                         if (!ExecutableInteractionClass) return
@@ -213,6 +229,10 @@ class DiscordBotHandler {
         for (const command of commands) {
             if (!command.name) continue
             hashSet[command.name] = command
+
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            console.log(`Registering Command: ${command.name}, AC ${command.autocomplete ?? false}`)
         }
 
         if (Constants.DEV_MODE) {
@@ -279,6 +299,8 @@ class DiscordBotHandler {
     }
 
     async sendWelcomeMessage(channel: TextBasedChannel, member: GuildMember) {
+        if (!discordBot.liveConfig.modules?.verification?.enabled) return
+
         const liveInteractionId = discordBot.liveConfig.modules?.verification?.interactions?.initialMessageInteractionPath
         if (!liveInteractionId) {
             await channel.send('**ERROR:** `interactions.initial_message` not set')

@@ -1,15 +1,48 @@
+import { LiveInteractionPermissions } from '../managers/liveCommandManager'
+
 export interface LiveConfig {
     modules?: Modules
+    permissions?: Record<string, LiveInteractionPermissions>
 }
 
 export interface Modules {
     verification?: VerificationModule;
     supportThreads?: SupportThreadsModule
+    roleKits?: RoleKitsModule
 }
 
-export interface SupportThreadsModule {
+interface ModuleConfig {
+    enabled?: boolean
     permission?: string
-    configs?: { [x: string]: SupportThreadConfigs }
+}
+
+export interface RoleKitsModule extends ModuleConfig {
+    kits?: Record<string, RoleKit>
+}
+
+export interface RoleKit {
+    name?: string
+    description?: string
+    addRoles?: string[]
+    removeRoles?: string[]
+    permissions?: LiveInteractionPermissions
+}
+
+export interface SupportThreadsModule extends ModuleConfig {
+    configs?: Record<string, SupportThreadConfigs>
+}
+
+export interface VerificationModule extends ModuleConfig {
+    welcomeChannel?: string
+    verifiedRole?: string
+
+    interactions?: {
+        initialMessageInteractionPath?: string
+        rulesAcknowledgementInteractionPath?: string
+    }
+
+    button?: LiveButtonConfig
+    links?: LiveLinkConfig[]
 }
 
 export interface SupportThreadConfigs {
@@ -22,20 +55,6 @@ export interface SupportThreadConfigs {
     
     troubleshootInteractionPath?: string
     troubleshootButton?: LiveButtonConfig
-}
-
-export interface VerificationModule {
-    permission?: string
-    welcomeChannel?: string
-    verifiedRole?: string
-
-    interactions?: {
-        initialMessageInteractionPath?: string
-        rulesAcknowledgementInteractionPath?: string
-    }
-
-    button?: LiveButtonConfig
-    links?: LiveLinkConfig[]
 }
 
 export interface LiveButtonConfig {

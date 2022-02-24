@@ -20,6 +20,11 @@ export default class ThreadKickCommand implements Command {
     async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply({ephemeral: true})
 
+        if (!interaction.memberPermissions?.has('MANAGE_THREADS')) {
+            interaction.editReply('You do not have permission to execute this command.')
+            return
+        }
+        
         if (!interaction.channel?.isThread()) {
             await interaction.editReply({ content: 'Command can only be used in a thread' })
             return

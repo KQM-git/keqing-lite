@@ -81,7 +81,7 @@ export class LiveTriggerManager {
             }
 
             const interactionMessage = new MessageLiveInteraction(interaction)
-            if (!interactionMessage.userIsAllowedToExecute(message.member)) {
+            if (!interactionMessage.memberIsAllowedToExecute(message.member)) {
                 continue
             }
 

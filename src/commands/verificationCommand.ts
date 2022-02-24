@@ -10,6 +10,7 @@ export default class VerificationCommand implements Command {
         return new SlashCommandBuilder()
             .setName('verification')
             .setDescription('Display the Verification prompt')
+            .setDefaultPermission(discordBot.liveConfig.modules?.verification?.enabled ?? false)
             .toJSON()
     }
 

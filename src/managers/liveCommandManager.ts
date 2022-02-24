@@ -10,7 +10,7 @@ import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-type
 import yaml from 'js-yaml'
 import Collection from '@discordjs/collection'
 import { MessageButtonOptions, MessageEmbedOptions, MessageSelectOptionData } from 'discord.js'
-import { IExecutableCommand } from '../commands/command'
+import { IAutocompletableCommand, IExecutableCommand } from '../commands/command'
 import LiveCommand from '../commands/liveCommand'
 import { SharedSlashCommandOptions } from '@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptions'
 import { substituteTemplateLiterals } from '../utils'
@@ -50,57 +50,11 @@ export class LiveCommandManager {
             const command: SlashCommandBuilder = new SlashCommandBuilder()
                 .setName(commandName)
             
-            if (typeof value.options == 'object') {
-                for (const optionName of Object.keys(value.options)) {
-                    const option = value.options[optionName]
-
-                    if (option.type.toLowerCase() == 'subcommand' || option.type.toLowerCase() == 'subcommand_group') continue
-                    
-                    switch (option.type.toLowerCase()) {
-                    case 'boolean':
-                        command.addBooleanOption(builder => builder
-                            .setName(optionName)
-                            .setDescription(option.description)
-                            .setRequired(option.required ?? false)
-                        )
-                        break
-                        
-                    case 'string':
-                        command.addStringOption(builder => builder
-                            .setName(optionName)
-                            .setDescription(option.description)
-                            .setRequired(option.required ?? false)
-                        )
-                        break
-                            
-                    case 'number':
-                        command.addNumberOption(builder => builder
-                            .setName(optionName)
-                            .setDescription(option.description)
-                            .setRequired(option.required ?? false)
-                        )
-                        break
-                            
-                    case 'user':
-                        command.addUserOption(builder => builder
-                            .setName(optionName)
-                            .setDescription(option.description)
-                            .setRequired(option.required ?? false)
-                        )
-                        break
-                            
-                    case 'role':
-                        command.addRoleOption(builder => builder
-                            .setName(optionName)
-                            .setDescription(option.description)
-                            .setRequired(option.required ?? false)
-                        )
-                        break
-                    }
-                }
-            }
-            
             if (subcommands.length == 0) {
+                if (typeof value.options == 'object') {
+                    this.addOptions(command, value.options)
+                }
+
                 commands.push(command.setDescription(value.description))
             } else if(subcommands.length == 1) {
                 const subcommand = subcommands.shift()!
@@ -111,6 +65,12 @@ export class LiveCommandManager {
                         builder = builder
                             .setName(subcommand)
                             .setDescription(value.description)
+                        
+                        if (typeof value.options == 'object') {
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-ignore
+                            this.addOptions(builder, value.options)
+                        }
                 
                         return builder
                     }))
@@ -146,7 +106,7 @@ export class LiveCommandManager {
         })
     }
 
-    resolveLiveCommandClass(commandName: string, subcommand: string | undefined = undefined): (new () => IExecutableCommand) | undefined {
+    resolveLiveCommandClass(commandName: string, subcommand: string | undefined = undefined): (new () => IExecutableCommand | IAutocompletableCommand) | undefined {
         if (subcommand) {
             commandName = path.join(commandName, subcommand)
         }
@@ -173,5 +133,55 @@ export class LiveCommandManager {
 
     parseCommandName(str: string): string {
         return str.split('.')[0].replace(/[^a-zA-Z]/gi, '').toLowerCase()
+    }
+
+    private addOptions(command: SlashCommandBuilder, options: any) {
+        for (const optionName of Object.keys(options)) {
+            const option = options[optionName]
+
+            if (option.type.toLowerCase() == 'subcommand' || option.type.toLowerCase() == 'subcommand_group') continue
+            
+            switch (option.type.toLowerCase()) {
+            case 'boolean':
+                command.addBooleanOption(builder => builder
+                    .setName(optionName)
+                    .setDescription(option.description)
+                    .setRequired(option.required ?? false)
+                )
+                break
+                
+            case 'string':
+                command.addStringOption(builder => builder
+                    .setName(optionName)
+                    .setDescription(option.description)
+                    .setRequired(option.required ?? false)
+                )
+                break
+                    
+            case 'number':
+                command.addNumberOption(builder => builder
+                    .setName(optionName)
+                    .setDescription(option.description)
+                    .setRequired(option.required ?? false)
+                )
+                break
+                    
+            case 'user':
+                command.addUserOption(builder => builder
+                    .setName(optionName)
+                    .setDescription(option.description)
+                    .setRequired(option.required ?? false)
+                )
+                break
+                    
+            case 'role':
+                command.addRoleOption(builder => builder
+                    .setName(optionName)
+                    .setDescription(option.description)
+                    .setRequired(option.required ?? false)
+                )
+                break
+            }
+        }
     }
 }

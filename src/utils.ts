@@ -1,6 +1,6 @@
 
 import {MessageOptions, MessageActionRow, MessageSelectMenu, MessageButton, GuildMember, Interaction, CommandInteraction } from 'discord.js'
-import { LiveInteraction } from './managers/liveCommandManager'
+import { LiveInteraction, LiveInteractionPermissions } from './managers/liveCommandManager'
 
 export function substituteTemplateLiterals(constants: any, str: string): string {
     constants['@ENCODED'] = urlEncodeValues(constants)
@@ -105,4 +105,25 @@ export function urlEncodeValues(obj: any): any {
     }
 
     return newObj
+}
+
+export function hasPermission(permissions: LiveInteractionPermissions | undefined, user: GuildMember | null | undefined) {
+    if (!permissions) return true
+
+    if (!user || !user.roles || !user.roles.cache) {
+        if (permissions.blacklist || permissions.whitelist) return false
+        return true
+    }
+
+    const roles = user.roles.cache
+
+    if (permissions.blacklist) {
+        if (roles.hasAny(...permissions.blacklist)) return false
+        else return true
+    } else if (permissions.whitelist) {
+        if (roles.hasAny(...permissions.whitelist)) return true
+        else return false
+    }
+
+    return true
 }

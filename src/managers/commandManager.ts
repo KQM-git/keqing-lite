@@ -3,7 +3,7 @@ import { RESTPatchAPIApplicationCommandJSONBody, RESTPostAPIApplicationCommandsJ
 import { Constants } from '../constants'
 import path from 'path'
 import fsp from 'fs/promises'
-import { Command } from '../commands/command'
+import { Command, IAutocompletableCommand, IExecutableCommand } from '../commands/command'
 
 export class LocalCommandManager {
     loadedCommands: Record<string, string> = {}
@@ -27,13 +27,12 @@ export class LocalCommandManager {
             if (!metadata) return undefined
 
             this.loadedCommands[metadata.name] = commandPath
-            console.log('Found command: ' + metadata.name)
 
             return metadata
         }).filter(x => x)
     }
 
-    resolveLocalCommandClass(name: string): (new () => Command) | undefined {
+    resolveLocalCommandClass(name: string): (new () => IExecutableCommand | IAutocompletableCommand) | undefined {
         const commandPath = this.loadedCommands[name]
         if (!commandPath) return undefined
 

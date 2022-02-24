@@ -14,6 +14,21 @@ export class LiveInteractionManager {
         'interactions'
     )
 
+    getAllInteractionNames(dir = ''): string[] {
+        const dirPath = path.join(LiveInteractionManager.liveInteractionsDir, dir)
+        return fs.readdirSync(dirPath).flatMap((file) => {
+            const filePath = path.join(dirPath, file)
+
+            if (fs.lstatSync(filePath).isDirectory()) {
+                return this.getAllInteractionNames(path.join(dir, file))
+            }
+
+            if (!file.endsWith('.yaml')) return []
+
+            return [path.join(dir, file.split('.')[0])]
+        })
+    }
+
     resolveLiveInteraction(interaction: any, constants: any = {}): LiveInteraction | undefined {
         if (typeof interaction == 'string') {
             return discordBot.liveInteractionManager.getLiveInteraction(
