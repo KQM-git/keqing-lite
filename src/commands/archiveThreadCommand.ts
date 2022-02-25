@@ -1,7 +1,7 @@
-import { SlashCommandBuilder } from '@discordjs/builders'
-import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
-import { CommandInteraction, Message } from 'discord.js'
-import { Command } from './command'
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { RESTPostAPIApplicationCommandsJSONBody } from "discord-api-types";
+import { CommandInteraction, Message } from "discord.js";
+import { Command } from "./command";
 
 export default class ArchiveThreadCommand implements Command {
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
@@ -24,17 +24,8 @@ export default class ArchiveThreadCommand implements Command {
             return
         }
 
-        await interaction.followUp({
-            content: `Thread closed by <@${interaction.user.id}>`,
-            ephemeral: false,
-            allowedMentions: {
-                users: []
-            }
-        })
-
-        const starterMessage = await interaction.channel.fetchStarterMessage()
-        await starterMessage.delete()
-
+        await interaction.channel.send({ content: `Thread Archived by <@${interaction.user.id}>` })
+        await interaction.channel.setLocked(true)
         await interaction.channel.setArchived(true)
     }
 }
