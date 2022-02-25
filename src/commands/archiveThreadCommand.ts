@@ -32,9 +32,17 @@ export default class ArchiveThreadCommand implements Command {
             }
         })
 
-        const starterMessage = await interaction.channel.fetchStarterMessage()
-        await starterMessage.delete()
+        try {
+            const starterMessage = await interaction.channel.fetchStarterMessage()
+            await starterMessage.delete()
+        } catch(err) {
+            await interaction.followUp({
+                content: 'Starter message not found: ' + err,
+                ephemeral: true
+            })
+        }
 
+        await interaction.channel.setLocked(true)
         await interaction.channel.setArchived(true)
     }
 }

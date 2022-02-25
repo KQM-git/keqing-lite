@@ -61,14 +61,14 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
             await thread.members.add(interaction.user.id)
             await thread.setLocked(true)
             await thread.send({
-                content: `Original message by <@${interaction.user.id}>: ${message.cleanContent}`,
+                content: `**User ID**: ${interaction.user.username}#${interaction.user.discriminator} - ${interaction.user.id}\n**Message**:${message.cleanContent}\n**Attachments**:\n${message.attachments.map(x => x.proxyURL).join('\n')}`,
                 allowedMentions: {
                     users: []
                 }
             })
 
             await loggingChannel.send({
-                content: `You've got Mail! ${thread.name}>`,
+                content: `You've got Mail! **${interaction.user.username}#${interaction.user.discriminator}** - ${interaction.user.id} opened a thread`,
                 components: [
                     new MessageActionRow()
                         .addComponents(
