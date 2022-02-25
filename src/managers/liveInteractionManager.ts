@@ -3,7 +3,7 @@ import path from 'path'
 import { LiveInteraction, LiveCommandManager } from './liveCommandManager'
 import yaml from 'js-yaml'
 import fs from 'fs'
-import { CommandInteractionOptionResolver } from 'discord.js'
+import { Collection, CommandInteractionOptionResolver } from 'discord.js'
 import { substituteTemplateLiterals } from '../utils'
 import { discordBot } from '..'
 

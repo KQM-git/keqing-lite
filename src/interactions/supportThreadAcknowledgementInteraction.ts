@@ -9,6 +9,7 @@ export default class SupportThreadConfirmationInteraction extends MultiButtonOpt
     }
 
     async executeWithOption(option: string, interaction: ButtonInteraction<CacheType>): Promise<void> {
+        await interaction.deferReply({ ephemeral: true })
         if (option.startsWith('display')) {
             const configName = option.split('&')[1]
             if (!configName) {

@@ -18,9 +18,20 @@ import { LiveConfig } from './models/LiveConfig'
 import { MessageLiveInteraction } from './models/MessageLiveInteraction'
 import { LiveTriggerManager } from './managers/triggerManager'
 import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
+import { ModMailManager } from './managers/modMailManager'
 
 class DiscordBotHandler {
-    client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MEMBERS] })
+    client = new Client({
+        intents: [
+            Intents.FLAGS.GUILDS,
+            Intents.FLAGS.GUILD_MESSAGES,
+            Intents.FLAGS.GUILD_MEMBERS,
+            Intents.FLAGS.DIRECT_MESSAGES
+        ],
+        partials: [
+            'CHANNEL'
+        ]
+    })
     restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
 
     localCommandManager = new LocalCommandManager()
@@ -28,8 +39,8 @@ class DiscordBotHandler {
 
     localInteractionManager = new LocalInteractionManager()
     liveInteractionManager = new LiveInteractionManager()
-
     liveTriggerManager = new LiveTriggerManager()
+    modMailManager = new ModMailManager()
 
     liveConstants: any | undefined = {}
     liveConfig: LiveConfig = {}
@@ -58,28 +69,21 @@ class DiscordBotHandler {
                 }
             })
 
-            this.client.on('threadUpdate', async (oldThread, newThread) => {
-                if (oldThread.archived || !newThread.archived) { return }
-                if (Constants.SUPPORT_CHANNEL_ID != newThread.parentId) { return }
-
-                try {
-                    const starterMessage = await newThread.fetchStarterMessage()
-                    await starterMessage.delete()
-                } catch (error: any) {
-                    await this.logInternalError(error)
-                }
-            })
-
             this.client.on('messageCreate', async message => {
-                await this.liveTriggerManager.parseMessage(message)
-
-                if (!message.channel.isThread()) { return }
-                if (message.member?.user.bot) { return }
-                if (message.channel.autoArchiveDuration != 60) { return }
-                if (Constants.SUPPORT_CHANNEL_ID != message.channel.parentId) { return }
-
-                await message.channel.send({ content: 'Setting archive duration to **24** hours due to activity' })
-                await message.channel.setAutoArchiveDuration(1440)
+                try {
+                    await this.modMailManager.handleMessage(message)
+                    await this.liveTriggerManager.parseMessage(message)
+                    
+                    if (!message.channel.isThread()) { return }
+                    if (message.member?.user.bot) { return }
+                    if (message.channel.autoArchiveDuration != 60) { return }
+                    if (Constants.SUPPORT_CHANNEL_ID != message.channel.parentId) { return }
+                    
+                    await message.channel.send({ content: 'Setting archive duration to **24** hours due to activity' })
+                    await message.channel.setAutoArchiveDuration(1440)
+                } catch (err) {
+                    this.logInternalError(err)
+                }
             })
 
             this.client.on('interactionCreate', async interaction => {

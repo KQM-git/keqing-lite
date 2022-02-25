@@ -24,8 +24,17 @@ export default class ArchiveThreadCommand implements Command {
             return
         }
 
-        await interaction.channel.send({ content: `Thread Archived by <@${interaction.user.id}>` })
-        await interaction.channel.setLocked(true)
+        await interaction.followUp({
+            content: `Thread closed by <@${interaction.user.id}>`,
+            ephemeral: false,
+            allowedMentions: {
+                users: []
+            }
+        })
+
+        const starterMessage = await interaction.channel.fetchStarterMessage()
+        await starterMessage.delete()
+
         await interaction.channel.setArchived(true)
     }
 }

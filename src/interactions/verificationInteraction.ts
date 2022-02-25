@@ -38,6 +38,8 @@ export default class VerificationInteraction extends MultiButtonOptionInteractio
     }
 
     async executeWithOption(option: string, interaction: ButtonInteraction<CacheType>): Promise<void> {
+        await interaction.deferReply({ephemeral: true})
+
         switch (option) {
         case 'accept':
             this.verifyGuildMember(interaction.member as GuildMember, interaction)

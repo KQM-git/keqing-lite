@@ -9,11 +9,21 @@ export interface Modules {
     verification?: VerificationModule;
     supportThreads?: SupportThreadsModule
     roleKits?: RoleKitsModule
+    modMail: ModMailModule
 }
 
 interface ModuleConfig {
     enabled?: boolean
     permission?: string
+}
+
+export interface ModMailModule extends ModuleConfig {
+    channels?: {
+        logging?: string
+        threads?: string
+    }
+
+    ignoreRole?: string
 }
 
 export interface RoleKitsModule extends ModuleConfig {

@@ -30,7 +30,7 @@ export default class LiveInteractionSelect implements IExecutableInteraction {
         const liveInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(liveInteractionId)
         if(!liveInteraction) {
             await interaction.editReply('**ERROR:** Unable to resolve live interaction for id ' + liveInteractionId)
-            return 
+            return
         }
 
         await interaction.editReply(

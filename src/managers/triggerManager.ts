@@ -1,14 +1,11 @@
 import { Constants } from '../constants'
 import path from 'path'
-import { LiveInteraction, LiveCommandManager, LiveInteractionPermissions } from './liveCommandManager'
+import { LiveInteractionPermissions } from './liveCommandManager'
 import yaml from 'js-yaml'
 import fs from 'fs'
-import { Collection, CommandInteractionOptionResolver, Message } from 'discord.js'
+import { Collection, Message } from 'discord.js'
 import { constantsFromObject, substituteTemplateLiterals } from '../utils'
 import { discordBot } from '..'
-import { SlashCommandBuilder } from '@discordjs/builders'
-import { RESTPatchAPIApplicationCommandJSONBody } from 'discord.js/node_modules/discord-api-types'
-import { LiveInteractionManager } from './liveInteractionManager'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 
 interface LiveTrigger {

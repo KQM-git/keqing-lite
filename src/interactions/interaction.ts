@@ -10,12 +10,6 @@ export abstract class MultiButtonOptionInteraction implements IExecutableInterac
 
         const metadata = interaction.customId.split('#')
         if (metadata.length > 1) {
-            if ((interaction.message.flags?.valueOf() ?? 0) & MessageFlags.resolve('EPHEMERAL')) {
-                await interaction.update({ components: [] })
-            } else {
-                await interaction.deferReply({ ephemeral: true })
-            }
-            
             return this.executeWithOption(metadata[1], interaction)
         }
 
