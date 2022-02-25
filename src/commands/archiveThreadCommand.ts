@@ -12,19 +12,24 @@ export default class ArchiveThreadCommand implements Command {
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
-        await interaction.deferReply({ ephemeral: true })
-
+        
         if (!interaction.memberPermissions?.has('MANAGE_THREADS')) {
-            interaction.editReply('You do not have permission to execute this command.')
+            interaction.reply({
+                content: 'You do not have permission to execute this command.',
+                ephemeral: true
+            })
             return
         }
-
+        
         if (!interaction.channel?.isThread()) {
-            interaction.editReply('Command can only be used inside a thread')
+            interaction.reply({
+                content: 'Command can only be used inside a thread',
+                ephemeral: true
+            })
             return
         }
-
-        await interaction.followUp({
+        
+        await interaction.reply({
             content: `Thread closed by <@${interaction.user.id}>`,
             ephemeral: false,
             allowedMentions: {
