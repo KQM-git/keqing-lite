@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, SlashCommandMentionableOption, SlashCommandUserOption } from '@discordjs/builders';
-import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types';
-import { CommandInteraction, ThreadChannel } from 'discord.js';
+import { SlashCommandBuilder, SlashCommandMentionableOption, SlashCommandUserOption } from '@discordjs/builders'
+import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
+import { CommandInteraction, ThreadChannel } from 'discord.js'
 import { Command } from './command'
 
 export default class ThreadKickCommand implements Command {
@@ -20,14 +20,19 @@ export default class ThreadKickCommand implements Command {
     async execute(interaction: CommandInteraction): Promise<void> {
         await interaction.deferReply({ephemeral: true})
 
+        if (!interaction.memberPermissions?.has('MANAGE_THREADS')) {
+            interaction.editReply('You do not have permission to execute this command.')
+            return
+        }
+        
         if (!interaction.channel?.isThread()) {
-            await interaction.editReply({ content: "Command can only be used in a thread" })
+            await interaction.editReply({ content: 'Command can only be used in a thread' })
             return
         }
 
         await (interaction.channel as ThreadChannel).members.remove(interaction.options.getUser('user', true).id)
 
-        await interaction.editReply({ content: `Done` })
+        await interaction.editReply({ content: 'Done' })
     }
 
 }
