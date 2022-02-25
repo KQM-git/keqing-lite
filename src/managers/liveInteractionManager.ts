@@ -51,15 +51,19 @@ export class LiveInteractionManager {
     }
 
     private getLiveInteraction(interactionName: string, constants: any) {
-        const interactionPath = path.join(LiveInteractionManager.liveInteractionsDir, interactionName + '.yaml')
+        try {
+            const interactionPath = path.join(LiveInteractionManager.liveInteractionsDir, interactionName + '.yaml')
 
-        if (!fs.existsSync(interactionPath)) return undefined
+            if (!fs.existsSync(interactionPath)) return undefined
 
-        return yaml.load(
-            substituteTemplateLiterals(
-                { ...discordBot.liveConstants, ...constants },
-                fs.readFileSync(interactionPath).toString()
-            )
-        ) as LiveInteraction | undefined
+            return yaml.load(
+                substituteTemplateLiterals(
+                    { ...discordBot.liveConstants, ...constants },
+                    fs.readFileSync(interactionPath).toString()
+                )
+            ) as LiveInteraction | undefined
+        } catch (error) {
+            throw new Error(`Unable to load interaction ${interactionName}\n${error}`)
+        }
     }
 }
