@@ -1,5 +1,5 @@
 import { APIInteractionGuildMember } from 'discord-api-types'
-import { GuildMember, Interaction, InteractionReplyOptions, Message, MessageActionRow, MessageButton, MessageOptions, MessageSelectMenu } from 'discord.js'
+import { GuildMember, Interaction, InteractionButtonOptions, InteractionReplyOptions, Message, MessageActionRow, MessageButton, MessageButtonOptions, MessageOptions, MessageSelectMenu } from 'discord.js'
 import { LiveInteraction } from '../managers/liveCommandManager'
 import { hasPermission } from '../utils'
 
@@ -45,6 +45,9 @@ export class MessageLiveInteraction {
         }
 
         const buttons = <MessageButton[]>this.liveInteraction.buttons?.map(button => {
+            if ((button as InteractionButtonOptions).customId && !(button as InteractionButtonOptions).customId.startsWith('liveInteraction'))
+                return undefined
+            
             return new MessageButton(button)
         }).filter(x => x)
 

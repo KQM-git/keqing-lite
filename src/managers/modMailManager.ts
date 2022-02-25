@@ -9,7 +9,7 @@ export class ModMailManager {
     }
 
     async handleMessage(message: Message) {
-        if (message.channel.type != 'DM' || message.author.bot) return
+        if (!this.moduleConfig?.enabled || message.channel.type != 'DM' || message.author.bot) return
         
         const member = await discordBot.client.guilds.cache.get(Constants.DISCORD_GUILD_ID)?.members.fetch(message.author.id)
         if (!member || (this.moduleConfig?.ignoreRole && member.roles.cache.has(this.moduleConfig.ignoreRole))) return
