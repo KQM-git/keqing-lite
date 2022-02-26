@@ -5,6 +5,7 @@ import { CommandInteraction, Guild, GuildMember, MessageActionRow, MessageButton
 import { discordBot } from '..'
 import { SupportThreadConfigs, SupportThreadsModule } from '../models/LiveConfig'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
+import { hasPermission } from '../utils'
 import { Command } from './command'
 
 export default class SupportCommand implements Command {
@@ -34,15 +35,12 @@ export default class SupportCommand implements Command {
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
-        await interaction.deferReply()
-
-        const permissionRole = this.moduleConfig?.permission
-        if (permissionRole) {
-            if (!(interaction.member as GuildMember)?.roles.cache.has(permissionRole)) {
-                await interaction.editReply({ content: `Command restricted to <@&${permissionRole}>` })
-                return
-            }
+        if (!hasPermission(this.moduleConfig?.permissions, interaction.member as GuildMember, 'MANAGE_THREADS')) {
+            await interaction.reply({ content: 'You dont have permission to use this command', ephemeral: true })
+            return
         }
+        
+        await interaction.deferReply()
 
         const configName = interaction.options.getString('configname')
         if (!configName) {

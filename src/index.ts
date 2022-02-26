@@ -2,7 +2,7 @@
 import { REST } from '@discordjs/rest'
 import AdmZip from 'adm-zip'
 import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { AnyChannel, Client, CommandInteraction, GuildMember, Intents, MessageActionRow, MessageButton, TextBasedChannel, TextChannel } from 'discord.js'
+import { AnyChannel, Client, CommandInteraction, Guild, GuildMember, Intents, MessageActionRow, MessageButton, TextBasedChannel, TextChannel } from 'discord.js'
 import { https } from 'follow-redirects'
 import { Constants } from './constants'
 import { LocalCommandManager } from './managers/commandManager'
@@ -19,6 +19,8 @@ import { MessageLiveInteraction } from './models/MessageLiveInteraction'
 import { LiveTriggerManager } from './managers/triggerManager'
 import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
 import { ModMailManager } from './managers/modMailManager'
+import { ReactRolesManager } from './managers/reactRolesManager'
+import { VanityRolesManager } from './managers/vanityRolesManager'
 
 class DiscordBotHandler {
     client = new Client({
@@ -26,13 +28,34 @@ class DiscordBotHandler {
             Intents.FLAGS.GUILDS,
             Intents.FLAGS.GUILD_MESSAGES,
             Intents.FLAGS.GUILD_MEMBERS,
-            Intents.FLAGS.DIRECT_MESSAGES
+            Intents.FLAGS.DIRECT_MESSAGES,
+            Intents.FLAGS.GUILD_MESSAGE_REACTIONS
         ],
         partials: [
-            'CHANNEL'
+            'MESSAGE',
+            'CHANNEL',
+            'REACTION'
         ]
     })
     restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
+
+    get guild(): Promise<Guild> {
+        return (async () => {
+            let guild: Guild | undefined
+
+            if (this.client.guilds.cache.has(Constants.DISCORD_GUILD_ID))
+                guild = this.client.guilds.cache.get(Constants.DISCORD_GUILD_ID)
+            else
+                guild = await this.client.guilds.fetch(Constants.DISCORD_GUILD_ID)
+            
+            if (!guild) {
+                throw new Error(`Unable to resolve guild ${Constants.DISCORD_GUILD_ID}`)
+            }
+
+            return guild
+        })()
+    }
+
 
     localCommandManager = new LocalCommandManager()
     liveCommandManager = new LiveCommandManager()
@@ -41,6 +64,8 @@ class DiscordBotHandler {
     liveInteractionManager = new LiveInteractionManager()
     liveTriggerManager = new LiveTriggerManager()
     modMailManager = new ModMailManager()
+    reactRolesManager = new ReactRolesManager()
+    vanityRolesManager = new VanityRolesManager()
 
     liveConstants: any | undefined = {}
     liveConfig: LiveConfig = {}
@@ -59,13 +84,57 @@ class DiscordBotHandler {
                 console.log('Ready!')
             })
 
+            this.client.on('guildMemberRemove', async (member) => {
+                try {
+                    if (member.partial) {
+                        member = await member.fetch()
+                    }
+                    
+                    await this.vanityRolesManager.memberUpdated(member)
+                } catch (err) {
+                    this.logInternalError(err)
+                }
+            })
+
+            this.client.on('guildMemberUpdate', async (_, member) => {
+                try {
+                    if (member.partial) {
+                        member = await member.fetch()
+                    }
+                    
+                    await this.vanityRolesManager.memberUpdated(member)
+                } catch (err) {
+                    this.logInternalError(err)
+                }
+            })
+
+            this.client.on('guildMemberAvailable', async (member) => {
+                try {
+                    if (member.partial) {
+                        member = await member.fetch()
+                    }
+                    
+                    await this.vanityRolesManager.memberUpdated(member)
+                } catch (err) {
+                    this.logInternalError(err)
+                }
+            })
+
             this.client.on('guildMemberAdd', async (member) => {
-                console.log('kekw someone joined')
                 const welcomeChannelId = this.liveConfig.modules?.verification?.welcomeChannel
                 if (welcomeChannelId) {
                     const channel = this.client.channels.cache.get(welcomeChannelId)
                     if (channel && channel.isText())
                         await this.sendWelcomeMessage(channel, member)
+                }
+            })
+
+            this.client.on('messageReactionAdd', async (reaction, user) => {
+                try {
+                    console.log('message reaction add')
+                    await this.reactRolesManager.handleReaction(reaction, user)
+                } catch (err) {
+                    this.logInternalError(err)
                 }
             })
 
