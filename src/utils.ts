@@ -5,7 +5,7 @@ import { LiveInteraction, LiveInteractionPermissions } from './managers/liveComm
 import vm from 'vm'
 import yaml from 'js-yaml'
 
-function substituteTemplateLiterals(constants: any, str: string): string {
+function substituteTemplateLiterals(str: string, constants: any): any {
     constants['$ENCODED'] = urlEncodeValues(constants)
 
     let templateRegex2 = /\$\{([\s\S]*?)\}/g
@@ -16,7 +16,13 @@ function substituteTemplateLiterals(constants: any, str: string): string {
         try {
             console.log(match[1])
             const result = vm.runInNewContext(match[1], constants)
-            str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
+
+            const start = str.slice(0, match.index)
+            const end = str.slice(templateRegex2.lastIndex)
+            if(start.length > 0 || end.length > 0)
+                str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
+            else 
+                return result
 
             templateRegex2 = /\$\{([\s\S]*?)\}/g
         } catch(error) {
@@ -140,16 +146,14 @@ export function loadYaml<T extends object>(str: string, constants: any): T | und
 } 
 
 function getProxy<T extends object>(obj: T, constants: any): T {
-    if (typeof obj == 'string') {
-        const value = substituteTemplateLiterals(constants, obj)
-        const numberValue = Number(value)
-
-        // @ts-ignore
-        return isNaN(numberValue) ? value : numberValue
-    } else if (Array.isArray(obj))
+    if (obj == undefined) {
+        return obj
+    } else if (typeof obj == 'string') {
+        return substituteTemplateLiterals(obj, constants)
+    } else if (Array.isArray(obj)) {
         // @ts-ignore
         return obj.map(v => getProxy(v, constants))
-    else if (typeof obj == 'object')
+    } else if (typeof obj == 'object') {
         return new Proxy<T>(obj, {
             get: (target, name) => {
                 // @ts-ignore
@@ -157,6 +161,7 @@ function getProxy<T extends object>(obj: T, constants: any): T {
                 return getProxy(value, constants)
             }
         })
-    
+    }
+
     return obj
 }
