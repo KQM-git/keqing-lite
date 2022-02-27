@@ -47,7 +47,7 @@ export default class VanityRoleCommand implements Command {
         await interaction.deferReply({ ephemeral: true })
         
         let color = NaN
-        const colorString = interaction.options.getString('color', false)?.match(/([a-f]){6}$/gi)
+        const colorString = interaction.options.getString('color', false)?.match(/([a-f0-9]){6}$/gi)
         if (colorString && colorString.length > 0) {
             color = Number(`0x${colorString}`)
         }
