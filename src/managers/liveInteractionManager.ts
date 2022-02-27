@@ -4,7 +4,7 @@ import { LiveInteraction, LiveCommandManager } from './liveCommandManager'
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { Collection, CommandInteractionOptionResolver } from 'discord.js'
-import { substituteTemplateLiterals } from '../utils'
+import { loadYaml } from '../utils'
 import { discordBot } from '..'
 
 export class LiveInteractionManager {
@@ -31,20 +31,9 @@ export class LiveInteractionManager {
 
     resolveLiveInteraction(interaction: any, constants: any = {}): LiveInteraction | undefined {
         if (typeof interaction == 'string') {
-            return discordBot.liveInteractionManager.getLiveInteraction(
-                substituteTemplateLiterals(
-                    { ...discordBot.liveConstants, ...constants },
-                    interaction
-                ),
-                constants
-            )
+            return this.getLiveInteraction(interaction, constants)
         } else if (typeof interaction == 'object') {
-            return JSON.parse(
-                substituteTemplateLiterals(
-                    { ...discordBot.liveConstants, ...constants },
-                    JSON.stringify(interaction)
-                )
-            )
+            return interaction
         } else {
             return undefined
         }
@@ -56,12 +45,10 @@ export class LiveInteractionManager {
 
             if (!fs.existsSync(interactionPath)) return undefined
 
-            return yaml.load(
-                substituteTemplateLiterals(
-                    { ...discordBot.liveConstants, ...constants },
-                    fs.readFileSync(interactionPath).toString()
-                )
-            ) as LiveInteraction | undefined
+            return loadYaml(
+                fs.readFileSync(interactionPath).toString(),
+                { ...discordBot.liveConstants, ...constants }
+            )
         } catch (error) {
             throw new Error(`Unable to load interaction ${interactionName}\n${error}`)
         }

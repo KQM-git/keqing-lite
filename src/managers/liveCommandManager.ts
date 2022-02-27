@@ -13,7 +13,7 @@ import { MessageButtonOptions, MessageEmbedOptions, MessageSelectOptionData } fr
 import { IAutocompletableCommand, IExecutableCommand } from '../commands/command'
 import LiveCommand from '../commands/liveCommand'
 import { SharedSlashCommandOptions } from '@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptions'
-import { substituteTemplateLiterals } from '../utils'
+import { loadYaml } from '../utils'
 import { discordBot } from '..'
 
 export interface LiveInteractionPermissions {
@@ -124,11 +124,9 @@ export class LiveCommandManager {
             if (!this.loadedCommands.has(commandName)) return undefined
             const filePath = this.loadedCommands.get(commandName)!
             
-            return yaml.load(
-                substituteTemplateLiterals(
-                    {...discordBot.liveConstants, ...constants},
-                    fs.readFileSync(filePath).toString()
-                )
+            return loadYaml(
+                fs.readFileSync(filePath).toString(),
+                { ...discordBot.liveConstants, ...constants }
             )
         } catch (error) {
             console.log(error)

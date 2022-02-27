@@ -4,7 +4,7 @@ import { LiveInteractionPermissions } from './liveCommandManager'
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { Collection, Message } from 'discord.js'
-import { constantsFromObject, substituteTemplateLiterals } from '../utils'
+import { constantsFromObject, loadYaml } from '../utils'
 import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 
@@ -54,12 +54,10 @@ export class LiveTriggerManager {
 
             if (!interactionPath || !fs.existsSync(interactionPath)) return undefined
 
-            return yaml.load(
-                substituteTemplateLiterals(
-                    { ...discordBot.liveConstants, ...constants },
-                    fs.readFileSync(interactionPath).toString()
-                )
-            ) as LiveTrigger
+            return loadYaml(
+                fs.readFileSync(interactionPath).toString(),
+                { ...discordBot.liveConstants, ...constants }
+            )
         } catch (error) {
             throw new Error(`Unable to load trigger for ${match}\n${error}`)
         }

@@ -13,7 +13,7 @@ import { LocalInteractionManager } from './managers/interactionManager'
 import { LiveInteractionManager } from './managers/liveInteractionManager'
 import yaml from 'js-yaml'
 import path from 'path'
-import { constantsFromObject, hasPermission, substituteTemplateLiterals } from './utils'
+import { constantsFromObject, hasPermission, loadYaml } from './utils'
 import { LiveConfig } from './models/LiveConfig'
 import { MessageLiveInteraction } from './models/MessageLiveInteraction'
 import { LiveTriggerManager } from './managers/triggerManager'
@@ -284,12 +284,10 @@ class DiscordBotHandler {
         }
 
         try {
-            this.liveConfig = await yaml.load(
-                substituteTemplateLiterals(
-                    this.liveConstants,
-                    (await fsp.readFile(liveConfigPath)).toString()
-                ) 
-            ) as LiveConfig
+            this.liveConfig = loadYaml(
+                fs.readFileSync(liveConfigPath).toString(),
+                this.liveConstants
+            ) ?? {}
 
             console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
         } catch(error: any) {

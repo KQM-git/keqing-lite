@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import {MessageOptions, MessageActionRow, MessageSelectMenu, MessageButton, GuildMember, Interaction, CommandInteraction, PermissionResolvable } from 'discord.js'
 import { LiveInteraction, LiveInteractionPermissions } from './managers/liveCommandManager'
 import vm from 'vm'
+import yaml from 'js-yaml'
 
-export function substituteTemplateLiterals(constants: any, str: string): string {
+function substituteTemplateLiterals(constants: any, str: string): string {
     constants['$ENCODED'] = urlEncodeValues(constants)
 
     let templateRegex2 = /\$\{([\s\S]*?)\}/g
@@ -130,4 +132,28 @@ export function hasPermission(permissions: LiveInteractionPermissions | undefine
     }
 
     return true
+}
+
+export function loadYaml<T extends object>(str: string, constants: any): T | undefined {
+    const loadedObj = yaml.load(str) as T
+    return getProxy(loadedObj, constants)
+} 
+
+function getProxy<T extends object>(obj: T, constants: any): T {
+    if (typeof obj == 'string')
+        // @ts-ignore
+        return substituteTemplateLiterals(constants, obj)
+    else if (Array.isArray(obj))
+        // @ts-ignore
+        return obj.map(v => getProxy(v, constants))
+    else if (typeof obj == 'object')
+        return new Proxy<T>(obj, {
+            get: (target, name) => {
+                // @ts-ignore
+                const value = target?.[name]
+                return getProxy(value, constants)
+            }
+        })
+    
+    return obj
 }

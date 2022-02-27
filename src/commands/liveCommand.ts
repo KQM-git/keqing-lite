@@ -1,12 +1,9 @@
-import { SlashCommandBuilder, SlashCommandStringOption, SlashCommandSubcommandBuilder } from '@discordjs/builders'
+import { SlashCommandBuilder, SlashCommandStringOption } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
-
-import { CommandInteraction, GuildMember, MessagePayload } from 'discord.js'
-import path from 'path'
+import { CommandInteraction, GuildMember } from 'discord.js'
 import { discordBot } from '..'
-import { LiveInteraction } from '../managers/liveCommandManager'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
-import { constantsFromObject, hasPermission, substituteTemplateLiterals } from '../utils'
+import { constantsFromObject, hasPermission } from '../utils'
 import { Command } from './command'
 
 export default class LiveCommand implements Command {
