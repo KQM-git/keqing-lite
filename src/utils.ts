@@ -5,36 +5,21 @@ import vm from 'vm'
 
 export function substituteTemplateLiterals(constants: any, str: string): string {
     constants['$ENCODED'] = urlEncodeValues(constants)
+    
+    let templateRegex2 = /\$\{([\s\S]*?)\}/g
+    let match
+    while ((match = templateRegex2.exec(str)) != undefined) {
+        if (match.length <= 1) continue
+        
+        try {
+            const result = vm.runInNewContext(match[1], constants)
+            str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
 
-    function traverse(breadcrumb: string[], obj: any, str: string): string {
-        Object.keys(obj ?? {}).forEach(key => {
-            const value = obj[key]
-            if (Array.isArray(value)) return
-            
-            if (typeof value === 'object') {
-                str = traverse([...breadcrumb, key], value, str)
-                return
-            }
-
-            const templateRegex2 = /\$\{([\s\S]*?)\}/g
-
-            let match
-            while ((match = templateRegex2.exec(str)) != undefined) {
-                if (match.length <= 1) continue
-                
-                try {
-                    const result = vm.runInNewContext(match[1], constants)
-                    str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
-                } catch(error) {
-                    throw new Error(`Error while evaluating JS:${match.index}\n${error}`)
-                }
-            }
-        })
-
-        return str
+            templateRegex2 = /\$\{([\s\S]*?)\}/g
+        } catch(error) {
+            throw new Error(`Error while evaluating JS:${match.index}\n${error}`)
+        }
     }
-
-    return traverse([], constants, str)
 }
 
 export function constantsFromObject(obj: GuildMember | Interaction): any {
