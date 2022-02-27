@@ -237,7 +237,7 @@ class DiscordBotHandler {
         await this.liveTriggerManager.loadTriggers()
 
         return this.registerCommands([
-            ...await this.liveCommandManager.getLiveCommands(),
+            ...this.liveCommandManager.getLiveCommands(),
             ...await this.localCommandManager.getLocalCommands()
         ])
     }

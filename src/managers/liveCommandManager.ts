@@ -94,7 +94,7 @@ export class LiveCommandManager {
 
             if (fs.lstatSync(filePath).isDirectory()) {
                 this.loadLiveCommands([...dirs, file])
-                return
+                continue
             }
 
             if (!file.endsWith('yaml')) return
@@ -131,7 +131,8 @@ export class LiveCommandManager {
                     fs.readFileSync(filePath).toString()
                 )
             )
-        } catch(error) {
+        } catch (error) {
+            console.log(error)
             throw new Error(`Unable to load live command at ${commandName}\n${error}`)
         }
     }

@@ -37,7 +37,7 @@ export class LiveTriggerManager {
                     )
                 ) as LiveTrigger
 
-                if (!commandMetadata || !commandMetadata.interaction || !commandMetadata.match) return
+                if (!commandMetadata || !commandMetadata.interaction || !commandMetadata.match) continue
             
                 this.loadedTriggers.set(file, commandMetadata)
             } catch (error) {
