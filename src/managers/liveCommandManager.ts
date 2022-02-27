@@ -88,7 +88,7 @@ export class LiveCommandManager {
     private loadLiveCommands(dirs: string[] = []) {
         const commandDir = path.join(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME, 'commands', ...dirs)
         
-        fs.readdirSync(commandDir).forEach((file) => {
+        for(const file of fs.readdirSync(commandDir)) {
             const commandName = this.parseCommandName(file)
             const filePath = path.join(commandDir, file)
 
@@ -103,7 +103,7 @@ export class LiveCommandManager {
                 [...dirs.map(this.parseCommandName), commandName].join('/'),
                 filePath
             )
-        })
+        }
     }
 
     resolveLiveCommandClass(commandName: string, subcommand: string | undefined = undefined): (new () => IExecutableCommand | IAutocompletableCommand) | undefined {
@@ -116,19 +116,24 @@ export class LiveCommandManager {
     }
 
     resolveLiveCommand(commandName: string, subcommand: string | undefined = undefined, constants: any): any | undefined {
-        if (subcommand) {
-            commandName = path.join(commandName, subcommand)
-        }
+        try {
 
-        if (!this.loadedCommands.has(commandName)) return undefined
-        const filePath = this.loadedCommands.get(commandName)!
-
-        return yaml.load(
-            substituteTemplateLiterals(
-                {...discordBot.liveConstants, ...constants},
-                fs.readFileSync(filePath).toString()
+            if (subcommand) {
+                commandName = path.join(commandName, subcommand)
+            }
+            
+            if (!this.loadedCommands.has(commandName)) return undefined
+            const filePath = this.loadedCommands.get(commandName)!
+            
+            return yaml.load(
+                substituteTemplateLiterals(
+                    {...discordBot.liveConstants, ...constants},
+                    fs.readFileSync(filePath).toString()
+                )
             )
-        )
+        } catch(error) {
+            throw new Error(`Unable to load live command at ${commandName}\n${error}`)
+        }
     }
 
     parseCommandName(str: string): string {

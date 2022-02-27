@@ -27,18 +27,23 @@ export class LiveTriggerManager {
     async loadTriggers() {
         this.loadedTriggers.clear()
         
-        fs.readdirSync(LiveTriggerManager.liveTriggersDir).forEach((file) => {
-            const commandMetadata: any = yaml.load(
-                substituteTemplateLiterals(
-                    discordBot.liveConstants,
-                    fs.readFileSync(path.join(LiveTriggerManager.liveTriggersDir, file)).toString()
-                )
-            ) as LiveTrigger
+        for (const file of fs.readdirSync(LiveTriggerManager.liveTriggersDir)) {
+            try {
+                const triggerPath = path.join(LiveTriggerManager.liveTriggersDir, file)
+                const commandMetadata: any = yaml.load(
+                    substituteTemplateLiterals(
+                        discordBot.liveConstants,
+                        fs.readFileSync(triggerPath).toString()
+                    )
+                ) as LiveTrigger
 
-            if (!commandMetadata || !commandMetadata.interaction || !commandMetadata.match) return
+                if (!commandMetadata || !commandMetadata.interaction || !commandMetadata.match) return
             
-            this.loadedTriggers.set(file, commandMetadata)
-        })
+                this.loadedTriggers.set(file, commandMetadata)
+            } catch (error) {
+                throw new Error(`unable to load trigger ${file}\n`+error)
+            }
+        }
     }
 
     async parseMessage(message: Message) {

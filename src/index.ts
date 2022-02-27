@@ -265,8 +265,8 @@ class DiscordBotHandler {
             )
 
             console.log(`loaded constants: ${JSON.stringify(this.liveConstants, null, 2)}`)
-        } catch(error: any) {
-            this.liveConstants = {}
+        } catch (error: any) {
+            this.logInternalError(new Error('Unable to load constants\n'+error))
         }
     }
 
@@ -293,7 +293,7 @@ class DiscordBotHandler {
 
             console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
         } catch(error: any) {
-            this.liveConfig = {}
+            this.logInternalError(new Error('Unable to load config\n' + error))
         }
     }
 
