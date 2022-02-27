@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, SlashCommandStringOption } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
-import { CommandInteraction, Guild, GuildMember, MessageActionRow, MessageAttachment, MessageButton } from 'discord.js'
+import { CommandInteraction, Guild, GuildMember, Message, MessageActionRow, MessageAttachment, MessageButton, MessageEmbed } from 'discord.js'
 import fs from 'fs'
 import path from 'path'
 import { discordBot } from '..'
@@ -43,10 +43,11 @@ export default class DumpCommand implements Command {
             file
         )
 
+
         await interaction.editReply({
             content: `**File**: ${interaction.options.getString('file', true)}`,
             attachments: [
-                new MessageAttachment(Buffer.from(fs.readFileSync(filePath)), file)
+                new MessageAttachment(filePath),
             ]
         })
     }
