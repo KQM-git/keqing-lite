@@ -5,13 +5,14 @@ import vm from 'vm'
 
 export function substituteTemplateLiterals(constants: any, str: string): string {
     constants['$ENCODED'] = urlEncodeValues(constants)
-    
+
     let templateRegex2 = /\$\{([\s\S]*?)\}/g
     let match
     while ((match = templateRegex2.exec(str)) != undefined) {
         if (match.length <= 1) continue
         
         try {
+            console.log(match, match[1], constants)
             const result = vm.runInNewContext(match[1], constants)
             str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
 
