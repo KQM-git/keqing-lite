@@ -15,7 +15,7 @@ function substituteTemplateLiterals(str: string, constants: any): any {
         
         try {
             console.log(match[1])
-            const result = vm.runInNewContext(match[1], constants)
+            const result = vm.runInNewContext(match[1], { ...constants })
 
             const start = str.slice(0, match.index)
             const end = str.slice(templateRegex2.lastIndex)
