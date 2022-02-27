@@ -140,10 +140,13 @@ export function loadYaml<T extends object>(str: string, constants: any): T | und
 } 
 
 function getProxy<T extends object>(obj: T, constants: any): T {
-    if (typeof obj == 'string')
+    if (typeof obj == 'string') {
+        const value = substituteTemplateLiterals(constants, obj)
+        const numberValue = Number(value)
+
         // @ts-ignore
-        return substituteTemplateLiterals(constants, obj)
-    else if (Array.isArray(obj))
+        return isNaN(numberValue) ? value : numberValue
+    } else if (Array.isArray(obj))
         // @ts-ignore
         return obj.map(v => getProxy(v, constants))
     else if (typeof obj == 'object')
