@@ -36,10 +36,7 @@ export class LiveTriggerManager {
             if (!file.endsWith('yaml')) continue
 
             const trigger = yaml.load(
-                substituteTemplateLiterals(
-                    discordBot.liveConfig,
-                    fs.readFileSync(filePath).toString()
-                )
+                fs.readFileSync(filePath).toString()
             ) as LiveTrigger
             
             console.log(trigger.match, path.join(dir, file))

@@ -40,9 +40,9 @@ export class LiveCommandManager {
         const commands: SlashCommandBuilder[] = []
         const nestedCommands = new Collection<string, SlashCommandSubcommandsOnlyBuilder>()
 
-        for (const [key, _] of this.loadedCommands) {
+        for (const [key, filePath] of this.loadedCommands) {
             console.log('loading '+key)
-            const value = this.resolveLiveCommand(key, undefined, {})
+            const value: any = yaml.load(fs.readFileSync(filePath).toString())
             const subcommands = key.split('/')
             const commandName = subcommands.shift()
             if(!commandName) continue
@@ -117,7 +117,6 @@ export class LiveCommandManager {
 
     resolveLiveCommand(commandName: string, subcommand: string | undefined = undefined, constants: any): any | undefined {
         try {
-
             if (subcommand) {
                 commandName = path.join(commandName, subcommand)
             }
