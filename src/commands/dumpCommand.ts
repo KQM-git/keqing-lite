@@ -38,7 +38,10 @@ export default class DumpCommand implements Command {
         )
 
         await interaction.editReply({
-            content: `**File**: ${interaction.options.getString('file', true)}\`\`\`yml\n${fs.readFileSync(filePath)}\`\`\``
+            embeds: [{
+                title:`**File**: ${interaction.options.getString('file', true)}`,
+                description:`\`\`\`yml\n${fs.readFileSync(filePath)}\`\`\``
+            }]
         })
     }
 
