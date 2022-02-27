@@ -231,10 +231,10 @@ class DiscordBotHandler {
 
     async loadCommands() {
         await this.downloadAndExtractLiveCommandRepo()
-        await this.loadConstants()
-        await this.loadConfig()
+        this.loadConstants()
+        this.loadConfig()
 
-        await this.liveTriggerManager.loadTriggers()
+        this.liveTriggerManager.loadTriggers()
 
         return this.registerCommands([
             ...this.liveCommandManager.getLiveCommands(),
@@ -246,7 +246,7 @@ class DiscordBotHandler {
         return this.registerCommands([])
     }
 
-    async loadConstants() {
+    loadConstants() {
         this.liveConstants = {}
 
         const liveConstantsPath = path.join(
@@ -260,17 +260,17 @@ class DiscordBotHandler {
         }
 
         try {
-            this.liveConstants = await yaml.load(
-                (await fsp.readFile(liveConstantsPath)).toString()
-            )
+            this.liveConstants = yaml.load(
+                fs.readFileSync(liveConstantsPath).toString()
+            ) ?? {}
 
             console.log(`loaded constants: ${JSON.stringify(this.liveConstants, null, 2)}`)
         } catch (error: any) {
-            this.logInternalError(new Error('Unable to load constants\n'+error))
+            throw new Error('Unable to load constants\n'+error)
         }
     }
 
-    async loadConfig() {
+    loadConfig() {
         this.liveConfig = {}
 
         const liveConfigPath = path.join(
@@ -291,7 +291,7 @@ class DiscordBotHandler {
 
             console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
         } catch(error: any) {
-            this.logInternalError(new Error('Unable to load config\n' + error))
+            new Error('Unable to load config\n' + error)
         }
     }
 
