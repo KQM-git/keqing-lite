@@ -108,7 +108,7 @@ export class LiveTriggerManager {
             )
 
             if (!interaction) {
-                await message.reply({content: 'Unable to resolve interaction: ' + trigger})
+                await message.reply({content: 'Unable to resolve interaction: ' + trigger.interaction})
                 continue
             }
 
