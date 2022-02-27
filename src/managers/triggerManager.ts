@@ -68,7 +68,8 @@ export class LiveTriggerManager {
             if (trigger.channels) {
                 if (trigger.channels?.blacklist) {
                     if (trigger.channels.blacklist.includes(message.channelId)) continue
-                } else if (trigger.channels?.whitelist) {
+                }
+                if (trigger.channels?.whitelist) {
                     if (!trigger.channels.whitelist.includes(message.channelId)) continue
                 }
             }
