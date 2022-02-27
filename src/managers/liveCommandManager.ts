@@ -97,7 +97,7 @@ export class LiveCommandManager {
                 continue
             }
 
-            if (!file.endsWith('yaml')) return
+            if (!file.endsWith('yaml')) continue
             
             this.loadedCommands.set(
                 [...dirs.map(this.parseCommandName), commandName].join('/'),
