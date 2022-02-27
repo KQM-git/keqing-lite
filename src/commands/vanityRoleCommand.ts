@@ -28,7 +28,7 @@ export default class VanityRoleCommand implements Command {
                 .setRequired(false)
             )
             .addStringOption(builder => builder
-                .setName('iconurl')
+                .setName('emote')
                 .setDescription('The icon to use')
                 .setRequired(false)
             )
