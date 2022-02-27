@@ -6,7 +6,7 @@ export function substituteTemplateLiterals(constants: any, str: string): string 
     constants['@ENCODED'] = urlEncodeValues(constants)
 
     function traverse(breadcrumb: string[], obj: any, str: string): string {
-        Object.keys(obj).forEach(key => {
+        Object.keys(obj ?? {}).forEach(key => {
             const value = obj[key]
             if (Array.isArray(value)) return
             
@@ -94,11 +94,11 @@ export function keysToUpperCase(obj: any): any {
 export function urlEncodeValues(obj: any): any {
     const newObj: any = {}
 
-    for (const key of Object.keys(obj)) {
+    for (const key of Object.keys(obj ?? {})) {
         const value = obj[key]
         if (typeof value == 'object') {
             newObj[key] = urlEncodeValues(value)
-        } else {
+        } else if (value) {
             newObj[key] = encodeURIComponent(value)
         }
 
