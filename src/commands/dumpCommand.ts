@@ -31,10 +31,16 @@ export default class DumpCommand implements Command {
         
         await interaction.deferReply()
 
+        const file = interaction.options.getString('file', true)
+        if (file.includes('..')) {
+            await interaction.editReply('You cant go up a directory')
+            return
+        }
+
         const filePath = path.join(
             Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
             Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME,
-            interaction.options.getString('file', true)
+            file
         )
 
         await interaction.editReply({
