@@ -1,9 +1,10 @@
 
 import {MessageOptions, MessageActionRow, MessageSelectMenu, MessageButton, GuildMember, Interaction, CommandInteraction, PermissionResolvable } from 'discord.js'
 import { LiveInteraction, LiveInteractionPermissions } from './managers/liveCommandManager'
+import vm from 'vm'
 
 export function substituteTemplateLiterals(constants: any, str: string): string {
-    constants['@ENCODED'] = urlEncodeValues(constants)
+    constants['$ENCODED'] = urlEncodeValues(constants)
 
     function traverse(breadcrumb: string[], obj: any, str: string): string {
         Object.keys(obj ?? {}).forEach(key => {
@@ -15,11 +16,19 @@ export function substituteTemplateLiterals(constants: any, str: string): string 
                 return
             }
 
-            const templateVar = [...breadcrumb, key].join('.')
-            const templateRegex = new RegExp(`{{\\s*?${templateVar}\\s*?}}`, 'g')
-            const templateRegex2 = new RegExp(`\\\${\\s*?${templateVar}\\s*?}`, 'g')
+            const templateRegex2 = /\$\{([\s\S]*?)\}/g
 
-            str = str.replace(templateRegex, obj[key]).replace(templateRegex2, obj[key])
+            let match
+            while ((match = templateRegex2.exec(str)) != undefined) {
+                if (match.length <= 1) continue
+                
+                try {
+                    const result = vm.runInNewContext(match[1], constants)
+                    str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
+                } catch(error) {
+                    throw new Error(`Error while evaluating JS:${match.index}\n${error}`)
+                }
+            }
         })
 
         return str
@@ -31,7 +40,7 @@ export function substituteTemplateLiterals(constants: any, str: string): string 
 export function constantsFromObject(obj: GuildMember | Interaction): any {
     const date = new Date()
     const constants: any = {
-        '@DATE': {
+        '$DATE': {
             'TIMESTAMP': date.getTime(),
 
             'DATE_STRING': date.toDateString(),
@@ -49,7 +58,7 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
     }
 
     if (obj.user) {
-        constants['@USER'] = {
+        constants['$USER'] = {
             'ID': obj.user.id,
             'USERNAME': obj.user.username,
             'TAG': obj.user.discriminator,
@@ -62,12 +71,12 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
 
         for (const option of interaction.options.data) {
             if (option.type == 'SUB_COMMAND' || option.type == 'SUB_COMMAND_GROUP') continue
-            if (!constants['@OPTIONS']) constants['@OPTIONS'] = {}
+            if (!constants['$OPTIONS']) constants['$OPTIONS'] = {}
 
             if(typeof option.value == 'object')
-                constants['@OPTIONS'][option.name.toUpperCase()] = keysToUpperCase(option.value)
+                constants['$OPTIONS'][option.name.toUpperCase()] = keysToUpperCase(option.value)
             else {
-                constants['@OPTIONS'][option.name.toUpperCase()] = option.value
+                constants['$OPTIONS'][option.name.toUpperCase()] = option.value
             }
         }
     }
