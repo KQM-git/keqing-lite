@@ -12,7 +12,7 @@ export function substituteTemplateLiterals(constants: any, str: string): string 
         if (match.length <= 1) continue
         
         try {
-            console.log(match, match[1], constants)
+            console.log(match[1])
             const result = vm.runInNewContext(match[1], constants)
             str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
 
@@ -21,6 +21,8 @@ export function substituteTemplateLiterals(constants: any, str: string): string 
             throw new Error(`Error while evaluating JS:${match.index}\n${error}`)
         }
     }
+
+    return str
 }
 
 export function constantsFromObject(obj: GuildMember | Interaction): any {
