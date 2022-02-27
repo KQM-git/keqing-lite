@@ -46,7 +46,7 @@ export default class DumpCommand implements Command {
 
         await interaction.editReply({
             content: `**File**: ${interaction.options.getString('file', true)}`,
-            attachments: [
+            files: [
                 new MessageAttachment(filePath),
             ]
         })
