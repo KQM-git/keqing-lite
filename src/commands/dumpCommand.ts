@@ -46,7 +46,7 @@ export default class DumpCommand implements Command {
         await interaction.editReply({
             content: `**File**: ${interaction.options.getString('file', true)}`,
             attachments: [
-                new MessageAttachment(fs.createReadStream(filePath), file)
+                new MessageAttachment(Buffer.from(fs.readFileSync(file)), file)
             ]
         })
     }

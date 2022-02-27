@@ -17,32 +17,52 @@ interface LiveTrigger {
 }
 
 export class LiveTriggerManager {
-    private loadedTriggers = new Collection<string, LiveTrigger>()
+    private loadedTriggers = new Collection<string, string>()
     static liveTriggersDir = path.join(
         Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
         Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME,
         'triggers'
     )
 
-    async loadTriggers() {
-        this.loadedTriggers.clear()
-        
-        for (const file of fs.readdirSync(LiveTriggerManager.liveTriggersDir)) {
-            try {
-                const triggerPath = path.join(LiveTriggerManager.liveTriggersDir, file)
-                const commandMetadata: any = yaml.load(
-                    substituteTemplateLiterals(
-                        discordBot.liveConstants,
-                        fs.readFileSync(triggerPath).toString()
-                    )
-                ) as LiveTrigger
+    loadTriggers(dir = '') {
+        for(const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
+            const filePath = path.join(LiveTriggerManager.liveTriggersDir, file)
 
-                if (!commandMetadata || !commandMetadata.interaction || !commandMetadata.match) continue
-            
-                this.loadedTriggers.set(file, commandMetadata)
-            } catch (error) {
-                throw new Error(`unable to load trigger ${file}\n`+error)
+            if (fs.lstatSync(filePath).isDirectory()) {
+                this.loadTriggers(path.join(dir, file))
+                continue
             }
+
+            if (!file.endsWith('yaml')) continue
+
+            const trigger = yaml.load(
+                substituteTemplateLiterals(
+                    discordBot.liveConfig,
+                    fs.readFileSync(filePath).toString()
+                )
+            ) as LiveTrigger
+            
+            this.loadedTriggers.set(
+                trigger.match,
+                path.join(dir, file)
+            )
+        }
+    }
+
+    resolveTrigger(interactionName: string, constants: any): LiveTrigger | undefined {
+        try {
+            const interactionPath = path.join(LiveTriggerManager.liveTriggersDir, interactionName + '.yaml')
+
+            if (!fs.existsSync(interactionPath)) return undefined
+
+            return yaml.load(
+                substituteTemplateLiterals(
+                    { ...discordBot.liveConstants, ...constants },
+                    fs.readFileSync(interactionPath).toString()
+                )
+            ) as LiveTrigger
+        } catch (error) {
+            throw new Error(`Unable to load interaction ${interactionName}\n${error}`)
         }
     }
 
@@ -50,20 +70,27 @@ export class LiveTriggerManager {
         if (!message.member || message.author.bot) return
 
         const content = message.content
-        for (const [_, trigger] of this.loadedTriggers) {
-            const regex = new RegExp(trigger.match, trigger.regexFlags ?? 'g')
+        for (const [match, triggerPath] of this.loadedTriggers) {
+            const regex = new RegExp(match, 'g')
             const matches = regex.exec(content) ?? []
-
+            
             if (matches.length == 0) continue
-
+            
             const constants: any = {
                 '@MATCH': {}
             }
-
+            
             let index = 0
             for (const match of matches) {
                 constants['@MATCH'][`${index++}`] = match
             }
+            
+            const trigger = this.resolveTrigger(
+                triggerPath, 
+                { ...constantsFromObject(message.member), ...constants }
+            )
+
+            if (!trigger) continue
 
             if (trigger.channels) {
                 if (trigger.channels?.blacklist) {
@@ -73,11 +100,12 @@ export class LiveTriggerManager {
                     if (!trigger.channels.whitelist.includes(message.channelId)) continue
                 }
             }
-
+            
             const interaction = discordBot.liveInteractionManager.resolveLiveInteraction(
                 trigger.interaction,
                 { ...constantsFromObject(message.member), ...constants }
             )
+
             if (!interaction) {
                 await message.reply({content: 'Unable to resolve interaction: ' + trigger})
                 continue
