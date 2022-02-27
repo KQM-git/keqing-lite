@@ -42,16 +42,16 @@ export class LiveTriggerManager {
             console.log(trigger.match, path.join(dir, file))
             this.loadedTriggers.set(
                 trigger.match,
-                path.join(dir, file)
+                filePath
             )
         }
     }
 
-    resolveTrigger(interactionName: string, constants: any): LiveTrigger | undefined {
+    resolveTrigger(match: string, constants: any): LiveTrigger | undefined {
         try {
-            const interactionPath = path.join(LiveTriggerManager.liveTriggersDir, interactionName)
+            const interactionPath = this.loadedTriggers.get(match)
 
-            if (!fs.existsSync(interactionPath)) return undefined
+            if (!interactionPath || !fs.existsSync(interactionPath)) return undefined
 
             return yaml.load(
                 substituteTemplateLiterals(
@@ -60,7 +60,7 @@ export class LiveTriggerManager {
                 )
             ) as LiveTrigger
         } catch (error) {
-            throw new Error(`Unable to load interaction ${interactionName}\n${error}`)
+            throw new Error(`Unable to load trigger for ${match}\n${error}`)
         }
     }
 
@@ -68,14 +68,14 @@ export class LiveTriggerManager {
         if (!message.member || message.author.bot) return
 
         const content = message.content
-        for (const [match, triggerPath] of this.loadedTriggers) {
+        for (const [match] of this.loadedTriggers) {
             const regex = new RegExp(match, 'g')
             const matches = regex.exec(content) ?? []
             
             if (matches.length == 0) continue
             
             const constants: any = {
-                '$MATCH': {}
+                '$MATCH': []
             }
             
             let index = 0
@@ -84,7 +84,7 @@ export class LiveTriggerManager {
             }
             
             const trigger = this.resolveTrigger(
-                triggerPath, 
+                match, 
                 { ...constantsFromObject(message.member), ...constants }
             )
 
