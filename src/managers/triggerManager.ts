@@ -26,7 +26,7 @@ export class LiveTriggerManager {
 
     loadTriggers(dir = '') {
         for(const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
-            const filePath = path.join(LiveTriggerManager.liveTriggersDir, file)
+            const filePath = path.join(LiveTriggerManager.liveTriggersDir, dir, file)
 
             if (fs.lstatSync(filePath).isDirectory()) {
                 this.loadTriggers(path.join(dir, file))
@@ -42,6 +42,7 @@ export class LiveTriggerManager {
                 )
             ) as LiveTrigger
             
+            console.log(trigger.match, path.join(dir, file))
             this.loadedTriggers.set(
                 trigger.match,
                 path.join(dir, file)
@@ -51,7 +52,7 @@ export class LiveTriggerManager {
 
     resolveTrigger(interactionName: string, constants: any): LiveTrigger | undefined {
         try {
-            const interactionPath = path.join(LiveTriggerManager.liveTriggersDir, interactionName + '.yaml')
+            const interactionPath = path.join(LiveTriggerManager.liveTriggersDir, interactionName)
 
             if (!fs.existsSync(interactionPath)) return undefined
 
