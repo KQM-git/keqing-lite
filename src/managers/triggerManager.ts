@@ -78,12 +78,12 @@ export class LiveTriggerManager {
             if (matches.length == 0) continue
             
             const constants: any = {
-                '@MATCH': {}
+                '$MATCH': {}
             }
             
             let index = 0
             for (const match of matches) {
-                constants['@MATCH'][`${index++}`] = match
+                constants['$MATCH'][index++] = match
             }
             
             const trigger = this.resolveTrigger(
