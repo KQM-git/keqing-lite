@@ -15,16 +15,20 @@
     "@types/follow-redirects": "^1.13.1",
     "@types/node": "^16.11.5",
     "adm-zip": "^0.5.9",
+    "async-mutex": "^0.3.2",
     "axios": "^0.24.0",
     "common-tags": "^1.8.2",
     "discord.js": "^13.6.0",
     "dotenv": "^10.0.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "msgpackr": "^1.5.4",
+    "write-file-atomic": "^4.0.1"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.4.34",
     "@types/common-tags": "^1.8.1",
     "@types/js-yaml": "^4.0.4",
+    "@types/write-file-atomic": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^5.2.0",
     "@typescript-eslint/parser": "^5.2.0",
     "eslint": "^8.1.0"

@@ -14,7 +14,6 @@ function substituteTemplateLiterals(str: string, constants: any): any {
         if (match.length <= 1) continue
         
         try {
-            console.log(match[1])
             const result = vm.runInNewContext(match[1], { ...constants })
 
             const start = str.slice(0, match.index)

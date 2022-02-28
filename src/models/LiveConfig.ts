@@ -17,11 +17,16 @@ export interface Modules {
     modMail?: ModMailModule
     reactRoles?: ReactRolesModule
     vanityRoles?: VanityRolesModule
+    pointsSystem?: PointsModule
 }
 
 interface ModuleConfig {
     enabled?: boolean
     permissions?: LiveInteractionPermissions
+}
+
+export interface PointsModule extends ModuleConfig {
+    loggingChannel: ChannelId
 }
 
 export interface VanityRolesModule extends ModuleConfig {

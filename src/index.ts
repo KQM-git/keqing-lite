@@ -2,7 +2,7 @@
 import { REST } from '@discordjs/rest'
 import AdmZip from 'adm-zip'
 import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { AnyChannel, Client, CommandInteraction, Guild, GuildMember, Intents, MessageActionRow, MessageButton, TextBasedChannel, TextChannel } from 'discord.js'
+import { AnyChannel, Client, CommandInteraction, Guild, GuildMember, Intents, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
 import { https } from 'follow-redirects'
 import { Constants } from './constants'
 import { LocalCommandManager } from './managers/commandManager'
@@ -14,13 +14,15 @@ import { LiveInteractionManager } from './managers/liveInteractionManager'
 import yaml from 'js-yaml'
 import path from 'path'
 import { constantsFromObject, hasPermission, loadYaml } from './utils'
-import { LiveConfig } from './models/LiveConfig'
+import { ChannelId, LiveConfig } from './models/LiveConfig'
 import { MessageLiveInteraction } from './models/MessageLiveInteraction'
 import { LiveTriggerManager } from './managers/triggerManager'
 import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
 import { ModMailManager } from './managers/modMailManager'
 import { ReactRolesManager } from './managers/reactRolesManager'
 import { VanityRolesManager } from './managers/vanityRolesManager'
+import { DatabaseManager } from './managers/databaseManager'
+import { PointsManager } from './managers/pointsManager'
 
 class DiscordBotHandler {
     client = new Client({
@@ -66,6 +68,8 @@ class DiscordBotHandler {
     modMailManager = new ModMailManager()
     reactRolesManager = new ReactRolesManager()
     vanityRolesManager = new VanityRolesManager()
+    databaseManager = new DatabaseManager()
+    pointsManager = new PointsManager()
 
     liveConstants: any | undefined = {}
     liveConfig: LiveConfig = {}
@@ -369,7 +373,7 @@ class DiscordBotHandler {
         })
     }
 
-    async sendWelcomeMessage(channel: TextBasedChannel, member: GuildMember) {
+    private async sendWelcomeMessage(channel: TextBasedChannel, member: GuildMember) {
         if (!discordBot.liveConfig.modules?.verification?.enabled) return
 
         const liveInteractionId = discordBot.liveConfig.modules?.verification?.interactions?.initialMessageInteractionPath
@@ -400,6 +404,19 @@ class DiscordBotHandler {
                     
             ]
         }))
+    }
+
+    async sendToChannel(channelId: ChannelId, message: MessageOptions) {
+        const guild = await discordBot.guild
+
+        let channel = guild.channels.cache.get(channelId)
+        if (!channel) channel = await guild.channels.fetch(channelId) ?? undefined
+        
+        if (!channel || !channel.isText()) {
+            throw new Error('Channel is not TextBased')
+        }
+
+        await channel.send(message)
     }
 }
 

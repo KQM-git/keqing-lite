@@ -3,6 +3,7 @@ import { discordBot } from '..'
 import { VanityRolesModule } from '../models/LiveConfig'
 import {stripIndent} from 'common-tags'
 import { hasPermission } from '../utils'
+import { MutexBasedManager } from './mutexBasedManager'
 
 export interface VanityRole {
     name: string
@@ -10,17 +11,22 @@ export interface VanityRole {
     icon?: GuildEmoji
 }
 
-export class VanityRolesManager {
+export class VanityRolesManager extends MutexBasedManager {
     get moduleConfig(): VanityRolesModule | undefined {
         return discordBot.liveConfig.modules?.vanityRoles
     }
 
     async getVanityRoleForMember(member: GuildMember) {
+        const userData = discordBot.databaseManager.getUserDocument(member.id)
+        const memberVanityRoleId = await userData.get('vanityRoleId')
+        if (!memberVanityRoleId) return undefined
+            
         const guild = await discordBot.guild
-        return guild.roles.cache.find(role => role.name.includes(`CR${member.id}`))
+        return guild.roles.cache.find(role => role.id == memberVanityRoleId)
     }
 
     async updateOrCreateRole(vanityRole: VanityRole, member: GuildMember) {
+        const userData = discordBot.databaseManager.getUserDocument(member.id)
         const guild = await discordBot.guild
         
         const existingRole = await this.getVanityRoleForMember(member)
@@ -30,12 +36,11 @@ export class VanityRolesManager {
                 color: existingRole.color,
                 icon:existingRole.iconURL()
             }
-            const role = await existingRole.edit({
-                ...vanityRole,
-                name: `${vanityRole.name} - CR${member.id}`,
-            })
+            const role = await existingRole.edit(vanityRole)
 
-            await this.sendToLoggingChannel({
+            if (!this.moduleConfig?.loggingChannel) return role
+            
+            await discordBot.sendToChannel(this.moduleConfig?.loggingChannel, {
                 embeds: [{
                     title: 'Updated VanityRole',
                     description: `<@${member.id}> updated the role <@&${role.id}>`,
@@ -74,13 +79,16 @@ export class VanityRolesManager {
 
             const role = await guild.roles.create({
                 ...vanityRole,
-                name: `${vanityRole.name} - CR${member.id}`,
                 position: rolePosition,
                 mentionable: false,
                 hoist: false,
             })
 
-            await this.sendToLoggingChannel({
+            userData.set('vanityRoleId', role.id)
+
+            if (!this.moduleConfig?.loggingChannel) return role
+            
+            await discordBot.sendToChannel(this.moduleConfig?.loggingChannel, {
                 embeds: [{
                     title: 'Created VanityRole',
                     description: `<@${member.id}> created the role <@&${role.id}>`,
@@ -100,48 +108,45 @@ export class VanityRolesManager {
 
             return role
         }
+
     }
 
     async memberUpdated(member: GuildMember) {
-        const role = member.roles.cache.find(role => role.name.includes(`CR${member.id}`))
-        if (!role) return
+        await this.getMutex(member.id).runExclusive(async () => {
+            const userData = discordBot.databaseManager.getUserDocument(member.id)
+            console.log('member updated')
 
-        if (hasPermission(this.moduleConfig?.permissions, member)) return
+            const memberVanityRoleId = await userData.get('vanityRoleId')
+            if (!memberVanityRoleId) return
 
-        await role.delete()
+            const guild = await discordBot.guild
+            const role = guild.roles.cache.get(memberVanityRoleId)
+            if (!role) return
+        
+            if (hasPermission(this.moduleConfig?.permissions, member)) return
 
-        await this.sendToLoggingChannel({
-            embeds: [{
-                title: 'Deleted VanityRole',
-                description: `<@${member.id}> no longer has permissions for vanity role`,
-                fields: [
-                    {
-                        name: 'DELETED ROLE',
-                        value: stripIndent`
-                            **name**: ${role.name}
-                            **color**: ${role.color}
-                            **icon**: ${role.iconURL() ? `[URL](${role.iconURL()})` : 'None'}
-                        `,
-                        inline: true
-                    }
-                ]
-            }]
-        })
-    }
+            await role.delete()
+            await userData.set('vanityRoleId', undefined)
 
-    async sendToLoggingChannel(message: MessageOptions) {
-        const guild = await discordBot.guild
-
-        if (this.moduleConfig?.loggingChannel) {
-            let channel = guild.channels.cache.get(this.moduleConfig.loggingChannel)
-            if (!channel) channel = await guild.channels.fetch(this.moduleConfig.loggingChannel) ?? undefined
+            if (!this.moduleConfig?.loggingChannel) return
             
-            if (!channel || !channel.isText()) {
-                discordBot.logInternalError(new Error('VanityRoles logging channel not text based'))
-                return
-            }
-
-            await channel.send(message)
-        }
+            await discordBot.sendToChannel(this.moduleConfig?.loggingChannel, {
+                embeds: [{
+                    title: 'Deleted VanityRole',
+                    description: `<@${member.id}> no longer has permissions for vanity role`,
+                    fields: [
+                        {
+                            name: 'DELETED ROLE',
+                            value: stripIndent`
+                                **name**: ${role.name}
+                                **color**: ${role.color}
+                                **icon**: ${role.iconURL() ? `[URL](${role.iconURL()})` : 'None'}
+                            `,
+                            inline: true
+                        }
+                    ]
+                }]
+            })
+        })
     }
 }
