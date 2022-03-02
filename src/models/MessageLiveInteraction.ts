@@ -1,5 +1,6 @@
 import { APIInteractionGuildMember } from 'discord-api-types'
 import { GuildMember, Interaction, InteractionButtonOptions, InteractionReplyOptions, Message, MessageActionRow, MessageButton, MessageButtonOptions, MessageOptions, MessageSelectMenu } from 'discord.js'
+import { APIMessage } from 'discord.js/node_modules/discord-api-types'
 import { LiveInteraction } from '../managers/liveCommandManager'
 import { hasPermission } from '../utils'
 
@@ -12,7 +13,7 @@ export class MessageLiveInteraction {
         return hasPermission(this.liveInteraction.permissions, member)
     }
 
-    async replyToInteraction(interaction: Interaction, content: MessageOptions | InteractionReplyOptions = {}): Promise<void> {
+    async replyToInteraction(interaction: Interaction, content: MessageOptions | InteractionReplyOptions = {}): Promise<APIMessage | Message<boolean> | undefined> {
         if (!interaction.isMessageComponent() && !interaction.isCommand()) {
             console.log('interaction not a message component')
             return
@@ -20,19 +21,16 @@ export class MessageLiveInteraction {
 
         if (!this.memberIsAllowedToExecute(interaction.member as GuildMember)){
             if (interaction.replied || interaction.deferred) {
-                await interaction.editReply({content: 'You don\'t have permission to execute this interaction.'})
+                return interaction.editReply({content: 'You don\'t have permission to execute this interaction.'})
             } else {
-                await interaction.reply({ content: 'You don\'t have permission to execute this interaction.'})
+                return interaction.reply({ content: 'You don\'t have permission to execute this interaction.', fetchReply: true })
             }
-            return
         }
 
         if (interaction.replied || interaction.deferred) {
-            console.log('editing reply')
-            await interaction.editReply(this.toMessage(content))
+            return interaction.editReply(this.toMessage(content))
         } else {
-            console.log('replying')
-            await interaction.reply(this.toMessage(content))
+            return interaction.reply({...this.toMessage(content), fetchReply: true})
         }
     }
 

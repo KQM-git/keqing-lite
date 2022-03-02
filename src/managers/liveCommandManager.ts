@@ -13,7 +13,7 @@ import { MessageButtonOptions, MessageEmbedOptions, MessageSelectOptionData } fr
 import { IAutocompletableCommand, IExecutableCommand } from '../commands/command'
 import LiveCommand from '../commands/liveCommand'
 import { SharedSlashCommandOptions } from '@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptions'
-import { substituteTemplateLiterals } from '../utils'
+import { loadYaml } from '../utils'
 import { discordBot } from '..'
 
 export interface LiveInteractionPermissions {
@@ -40,9 +40,9 @@ export class LiveCommandManager {
         const commands: SlashCommandBuilder[] = []
         const nestedCommands = new Collection<string, SlashCommandSubcommandsOnlyBuilder>()
 
-        for (const [key, _] of this.loadedCommands) {
+        for (const [key, filePath] of this.loadedCommands) {
             console.log('loading '+key)
-            const value = this.resolveLiveCommand(key, undefined, {})
+            const value: any = yaml.load(fs.readFileSync(filePath).toString())
             const subcommands = key.split('/')
             const commandName = subcommands.shift()
             if(!commandName) continue
@@ -88,22 +88,22 @@ export class LiveCommandManager {
     private loadLiveCommands(dirs: string[] = []) {
         const commandDir = path.join(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME, 'commands', ...dirs)
         
-        fs.readdirSync(commandDir).forEach((file) => {
+        for(const file of fs.readdirSync(commandDir)) {
             const commandName = this.parseCommandName(file)
             const filePath = path.join(commandDir, file)
 
             if (fs.lstatSync(filePath).isDirectory()) {
                 this.loadLiveCommands([...dirs, file])
-                return
+                continue
             }
 
-            if (!file.endsWith('yaml')) return
+            if (!file.endsWith('yaml')) continue
             
             this.loadedCommands.set(
                 [...dirs.map(this.parseCommandName), commandName].join('/'),
                 filePath
             )
-        })
+        }
     }
 
     resolveLiveCommandClass(commandName: string, subcommand: string | undefined = undefined): (new () => IExecutableCommand | IAutocompletableCommand) | undefined {
@@ -116,19 +116,22 @@ export class LiveCommandManager {
     }
 
     resolveLiveCommand(commandName: string, subcommand: string | undefined = undefined, constants: any): any | undefined {
-        if (subcommand) {
-            commandName = path.join(commandName, subcommand)
-        }
-
-        if (!this.loadedCommands.has(commandName)) return undefined
-        const filePath = this.loadedCommands.get(commandName)!
-
-        return yaml.load(
-            substituteTemplateLiterals(
-                {...discordBot.liveConstants, ...constants},
-                fs.readFileSync(filePath).toString()
+        try {
+            if (subcommand) {
+                commandName = path.join(commandName, subcommand)
+            }
+            
+            if (!this.loadedCommands.has(commandName)) return undefined
+            const filePath = this.loadedCommands.get(commandName)!
+            
+            return loadYaml(
+                fs.readFileSync(filePath).toString(),
+                { ...discordBot.liveConstants, ...constants }
             )
-        )
+        } catch (error) {
+            console.log(error)
+            throw new Error(`Unable to load live command at ${commandName}\n${error}`)
+        }
     }
 
     parseCommandName(str: string): string {

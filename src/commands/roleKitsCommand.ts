@@ -38,22 +38,14 @@ export default class RoleKitsCommand implements Command {
             .toJSON()
     }
 
-    async execute(interaction: CommandInteraction): Promise<void> {
-        await interaction.deferReply()
-
-        const permissionRole = this.moduleConfig?.permission
-        if (permissionRole) {
-            if (!(interaction.member as GuildMember)?.roles.cache.has(permissionRole)) {
-                await interaction.editReply(`Command restricted to <@${permissionRole}>`)
-                return
-            }
-        } else {
-            if (!interaction.memberPermissions?.has('MANAGE_ROLES')) {
-                await interaction.editReply('You are not authorized to use this command')
-                return
-            }
+    async execute(interaction: CommandInteraction): Promise<void> {        
+        if (!hasPermission(this.moduleConfig?.permissions, interaction.member as GuildMember, 'MANAGE_ROLES')) {
+            await interaction.reply({ content: 'You dont have permission to use this command', ephemeral: true })
+            return
         }
-
+        
+        await interaction.deferReply()
+        
         const member = interaction.options.getMentionable('user', true) as GuildMember
         const roleKitName = interaction.options.getString('kit', true)
         const roleKit = this.roleKits[roleKitName]

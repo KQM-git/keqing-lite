@@ -3,6 +3,7 @@ import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
 import { CommandInteraction, Guild, GuildMember, MessageActionRow, MessageButton } from 'discord.js'
 import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
+import { hasPermission } from '../utils'
 import { Command } from './command'
 
 export default class VerificationCommand implements Command {
@@ -15,15 +16,12 @@ export default class VerificationCommand implements Command {
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
-        await interaction.deferReply()
-
-        const permissionRole = discordBot.liveConfig.modules?.verification?.permission
-        if (permissionRole) {
-            if (!(interaction.member as GuildMember)?.roles.cache.has(permissionRole)) {
-                await interaction.editReply({ content: `Command restricted to <@${permissionRole}>` })
-                return
-            }
+        if (!hasPermission(discordBot.liveConfig.modules?.verification?.permissions, interaction.member as GuildMember)) {
+            await interaction.reply({ content: 'You are not allowed to use this command', ephemeral: true })
+            return
         }
+        
+        await interaction.deferReply()
 
         const liveInteractionId = discordBot.liveConfig.modules?.verification?.interactions?.initialMessageInteractionPath
         if (!liveInteractionId) {

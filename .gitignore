@@ -6,6 +6,7 @@ dist
 lib
 liveCommandsRepo*
 node_modules
+db
 
 # Logs
 logs

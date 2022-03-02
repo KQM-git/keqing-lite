@@ -1,12 +1,9 @@
-import { SlashCommandBuilder, SlashCommandStringOption, SlashCommandSubcommandBuilder } from '@discordjs/builders'
+import { SlashCommandBuilder, SlashCommandStringOption } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
-
-import { CommandInteraction, GuildMember, MessagePayload } from 'discord.js'
-import path from 'path'
+import { CommandInteraction, GuildMember } from 'discord.js'
 import { discordBot } from '..'
-import { LiveInteraction } from '../managers/liveCommandManager'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
-import { constantsFromObject, substituteTemplateLiterals } from '../utils'
+import { constantsFromObject, hasPermission } from '../utils'
 import { Command } from './command'
 
 export default class LiveCommand implements Command {
@@ -38,27 +35,27 @@ export default class LiveCommand implements Command {
         
         const subcommand = interaction.options.getSubcommand(false) ?? undefined
         const liveCommand: any = discordBot.liveCommandManager.resolveLiveCommand(liveCommandName, subcommand, constants)
+        if (!liveCommand) {
+            throw new Error('Unable to parse resolve live command ' + liveCommandName + ' subcommand: '+ subcommand)
+        }
 
-        await interaction.deferReply({ ephemeral: liveCommand?.ephemeral })
-        if (interaction.member) {
-            if (liveCommand.permissions?.blacklist) {
-                if ((interaction.member as GuildMember).roles.cache.hasAny(...liveCommand.permissions.blacklist)) {
-                    await interaction.editReply('**ERROR:** You are not authorized to use this command ')
-                    return
-                }
-            } else if (liveCommand.permissions?.whitelist) {
-                if (!(interaction.member as GuildMember).roles.cache.hasAny(...liveCommand.permissions.whitelist)) {
-                    await interaction.editReply('**ERROR:** You are not authorized to use this command ')
-                    return
-                }
+        if (liveCommand.channels) {
+            if (liveCommand.channels?.blacklist) {
+                if (liveCommand.channels.blacklist.includes(interaction.channelId)) 
+                    throw new Error('You cannot use this command in this channel')
+            }
+            if (liveCommand.channels?.whitelist) {
+                if (!liveCommand.channels.whitelist.includes(interaction.channelId)) 
+                    throw new Error('You cannot use this command in this channel')
             }
         }
-        
-        if (!liveCommand) {
-            await interaction.editReply('**ERROR:** Unable to parse live command ' + liveCommandName)
-            return
+
+        if (!hasPermission(liveCommand.permissions, interaction.member as GuildMember)) {
+            throw new Error('You are not authorised to use this command')
         }
 
+        await interaction.deferReply({ ephemeral: liveCommand?.ephemeral })
+        
         const liveInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(
             liveCommand.interaction,
             constants
@@ -70,7 +67,8 @@ export default class LiveCommand implements Command {
         }
 
         try {
-            await interaction.editReply(new MessageLiveInteraction(liveInteraction).toMessage())
+            new MessageLiveInteraction(liveInteraction)
+                .replyToInteraction(interaction)
         } catch(error) {
             console.log(error)
             await interaction.editReply('Unable to send live interaction\n**ERROR:** ' + error)
