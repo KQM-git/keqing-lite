@@ -59,7 +59,6 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
             })
 
             await thread.members.add(interaction.user.id)
-            await thread.setLocked(true)
             await thread.send({
                 content: `**User ID**: ${interaction.user.username}#${interaction.user.discriminator} - ${interaction.user.id}\n**Message**:${message.cleanContent}\n**Attachments**:\n${message.attachments.map(x => x.proxyURL).join('\n')}`,
                 allowedMentions: {
@@ -131,6 +130,7 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
                     }
                 })
                 
+                await thread.setLocked(true)
                 await thread.setArchived(true)
 
                 await interaction.editReply('Closed thread')
