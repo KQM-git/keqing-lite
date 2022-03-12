@@ -11,7 +11,8 @@ export class ModMailManager {
     async handleMessage(message: Message) {
         if (!this.moduleConfig?.enabled || message.channel.type != 'DM' || message.author.bot) return
         
-        const member = await discordBot.client.guilds.cache.get(Constants.DISCORD_GUILD_ID)?.members.fetch(message.author.id)
+        const member = await (await discordBot.guild).members.fetch(message.author.id)
+        console.log(`handling message ${member.id}`)
         if (!member || (this.moduleConfig?.ignoreRole && member.roles.cache.has(this.moduleConfig.ignoreRole))) return
 
         await message.reply({
