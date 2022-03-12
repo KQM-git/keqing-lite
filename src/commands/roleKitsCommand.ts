@@ -4,7 +4,7 @@ import { CommandInteraction, Guild, GuildMember, MessageActionRow, MessageButton
 import { discordBot } from '..'
 import { RoleKit, RoleKitsModule } from '../models/LiveConfig'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
-import { hasPermission } from '../utils'
+import { hasPermission, parseCommandName } from '../utils'
 import { Command } from './command'
 
 export default class RoleKitsCommand implements Command {
@@ -38,6 +38,23 @@ export default class RoleKitsCommand implements Command {
             .toJSON()
     }
 
+    getCommandAliasMetadata(): RESTPostAPIApplicationCommandsJSONBody[] {
+        return <RESTPostAPIApplicationCommandsJSONBody[]> Object.keys(this.roleKits).map(key => {
+            const value = this.roleKits[key]
+            if(!value.exportAsCommand) return undefined
+
+            return new SlashCommandBuilder()
+                .setName(parseCommandName(key))
+                .setDescription('Give `'+key+'` kit to a user')
+                .addMentionableOption(builder => builder
+                    .setName('user')
+                    .setDescription('User to give the kit to')
+                    .setRequired(true)
+                )
+                .toJSON()
+        }).filter(x => x)
+    }
+
     async execute(interaction: CommandInteraction): Promise<void> {        
         if (!hasPermission(this.moduleConfig?.permissions, interaction.member as GuildMember, 'MANAGE_ROLES')) {
             await interaction.reply({ content: 'You dont have permission to use this command', ephemeral: true })
@@ -47,7 +64,7 @@ export default class RoleKitsCommand implements Command {
         await interaction.deferReply()
         
         const member = interaction.options.getMentionable('user', true) as GuildMember
-        const roleKitName = interaction.options.getString('kit', true)
+        const roleKitName = interaction.commandName == 'rolekit' ? interaction.options.getString('kit', true) : interaction.commandName
         const roleKit = this.roleKits[roleKitName]
         if (!roleKit) {
             await interaction.editReply(`Role kit with the name ${roleKitName} does not exist`)

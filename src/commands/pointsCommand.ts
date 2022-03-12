@@ -13,6 +13,15 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
             .setDescription('Manage points of a user')
             .setDefaultPermission(this.moduleConfig?.enabled ?? false)
             .addSubcommand(builder => builder
+                .setName('list')
+                .setDescription('Get the points of all users')
+                .addNumberOption(builder => builder
+                    .setName('page')
+                    .setDescription('The page')
+                    .setRequired(false)
+                )
+            )
+            .addSubcommand(builder => builder
                 .setName('get')
                 .setDescription('Get the points of a user')
                 .addUserOption(builder => builder
@@ -51,6 +60,24 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
         await interaction.deferReply()
 
         const subcommand = interaction.options.getSubcommand()
+        if (subcommand == 'list') {
+            const page = interaction.options.getNumber('page') ?? 1
+            const limit = 50
+            const allPoints = await discordBot.pointsManager.getAllPoints()
+            await interaction.editReply({
+                embeds: [{
+                    title: 'Points list',
+                    description: stripIndent`
+                    ${Object.entries(allPoints).map(([userId, points]) => `<@${userId}>: ${points?.amount ?? 0}`).join('\n')}
+                    `,
+                    footer: {
+                        text: `Page ${page} of ${Math.ceil(Object.keys(allPoints).length/limit)}`
+                    }
+                }]
+            })
+            return
+        }
+
         const user = interaction.options.getUser('user', true)
         if (subcommand == 'add') {
             await discordBot.pointsManager.addPointsToUser(
@@ -59,7 +86,7 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
                 interaction.options.getString('reason', true),
                 interaction.user,
             )
-        } 
+        }
 
         const points = await discordBot.pointsManager.getPointsForUser(user)
 

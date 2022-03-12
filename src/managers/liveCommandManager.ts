@@ -13,7 +13,7 @@ import { MessageButtonOptions, MessageEmbedOptions, MessageSelectOptionData } fr
 import { IAutocompletableCommand, IExecutableCommand } from '../commands/command'
 import LiveCommand from '../commands/liveCommand'
 import { SharedSlashCommandOptions } from '@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptions'
-import { loadYaml } from '../utils'
+import { loadYaml, parseCommandName } from '../utils'
 import { discordBot } from '..'
 
 export interface LiveInteractionPermissions {
@@ -89,7 +89,7 @@ export class LiveCommandManager {
         const commandDir = path.join(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME, 'commands', ...dirs)
         
         for(const file of fs.readdirSync(commandDir)) {
-            const commandName = this.parseCommandName(file)
+            const commandName = parseCommandName(file)
             const filePath = path.join(commandDir, file)
 
             if (fs.lstatSync(filePath).isDirectory()) {
@@ -100,7 +100,7 @@ export class LiveCommandManager {
             if (!file.endsWith('yaml')) continue
             
             this.loadedCommands.set(
-                [...dirs.map(this.parseCommandName), commandName].join('/'),
+                [...dirs.map(parseCommandName), commandName].join('/'),
                 filePath
             )
         }
@@ -132,10 +132,6 @@ export class LiveCommandManager {
             console.log(error)
             throw new Error(`Unable to load live command at ${commandName}\n${error}`)
         }
-    }
-
-    parseCommandName(str: string): string {
-        return str.split('.')[0].replace(/[^a-zA-Z]/gi, '').toLowerCase()
     }
 
     private addOptions(command: SlashCommandBuilder, options: any) {

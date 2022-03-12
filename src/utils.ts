@@ -164,3 +164,7 @@ function getProxy<T extends object>(obj: T, constants: any): T {
 
     return obj
 }
+
+export function parseCommandName(str: string): string {
+    return str.split('.')[0].replace(/[^a-zA-Z]/gi, '').toLowerCase()
+}

@@ -17,7 +17,11 @@ export class DatabaseManager {
     database = new DocumentDatabase(path.join(process.cwd(), 'db'))
     usersCollection = this.database.getCollection<UserData>('users')
 
-    getUserDocument(userId: string): Document<UserData> {
+    getUserDocument(userId: string) {
         return this.usersCollection.getDocument(userId, {})
+    }
+
+    getAllUserDocuments(page: number, limit = 50) {
+        return this.usersCollection.getAllDocuments({}, page, limit)
     }
 }

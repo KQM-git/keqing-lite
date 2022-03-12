@@ -5,6 +5,7 @@ import { LiveConfig, Modules } from '../models/LiveConfig'
 
 export interface IExportedCommand {
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody
+    getCommandAliasMetadata?(): RESTPostAPIApplicationCommandsJSONBody[]
 }
 
 export interface IExecutableCommand {

@@ -68,6 +68,7 @@ export interface RoleKit {
     addRoles?: RoleId[]
     removeRoles?: RoleId[]
     permissions?: LiveInteractionPermissions
+    exportAsCommand?: boolean
 }
 
 export interface SupportThreadsModule extends ModuleConfig {
