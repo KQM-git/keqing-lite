@@ -9,6 +9,7 @@ export class ModMailManager {
     }
 
     async handleMessage(message: Message) {
+        console.log(`enabled: ${this.moduleConfig?.enabled}, type: ${message.channel.type}, bot: ${message.author.bot}`)
         if (!this.moduleConfig?.enabled || message.channel.type != 'DM' || message.author.bot) return
         
         const member = await (await discordBot.guild).members.fetch(message.author.id)
