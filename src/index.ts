@@ -198,7 +198,11 @@ class DiscordBotHandler {
                     }
 
                     console.error(error)
-                    await interaction.followUp({ content: '**ERROR**: ' + error, ephemeral: true })
+                    if (interaction.replied || interaction.deferred) {
+                        await interaction.editReply({ content: '**ERROR**: ' + error })
+                    } else {
+                        await interaction.reply({content: `**ERROR:** ${error}`, ephemeral: true})
+                    }
                 }
             })
 
