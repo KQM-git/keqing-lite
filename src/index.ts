@@ -289,6 +289,7 @@ class DiscordBotHandler {
         )
 
         if (!fs.existsSync(liveConfigPath)) {
+            console.log('Live config dont exist')
             return
         }
 
@@ -300,7 +301,7 @@ class DiscordBotHandler {
 
             console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
         } catch(error: any) {
-            new Error('Unable to load config\n' + error)
+            throw new Error('Unable to load config\n' + error)
         }
     }
 
