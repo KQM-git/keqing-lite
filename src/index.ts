@@ -144,6 +144,7 @@ class DiscordBotHandler {
 
             this.client.on('messageCreate', async message => {
                 try {
+                    console.log('messageCreate')
                     await this.modMailManager.handleMessage(message)
                     await this.liveTriggerManager.parseMessage(message)
                     
