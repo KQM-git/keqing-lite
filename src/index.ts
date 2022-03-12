@@ -235,7 +235,6 @@ class DiscordBotHandler {
         if (!channel?.isText()) return
 
         await channel.send(`**INTERNAL UNHANDLED ERROR**\n${error}`)
-        this.client.destroy()
     }
 
     async loadCommands() {
