@@ -32,6 +32,15 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
                 )
             )
             .addSubcommand(builder => builder
+                .setName('clean')
+                .setDescription('Removes all the points and history of a user')
+                .addUserOption(builder => builder
+                    .setName('user')
+                    .setDescription('The user to remove the points for')
+                    .setRequired(true)
+                )
+            )
+            .addSubcommand(builder => builder
                 .setName('import')
                 .setDescription('import points from csv')
                 .addStringOption(builder => builder
@@ -70,6 +79,7 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
         await interaction.deferReply()
 
         const subcommand = interaction.options.getSubcommand()
+
         if (subcommand == 'import') {
             const message = await interaction.channel?.messages.fetch(interaction.options.getString('messageid', true), { force: true })
             const attachment = message?.attachments.first()
@@ -118,6 +128,12 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
         }
 
         const user = interaction.options.getUser('user', true)
+        if (subcommand == 'clean') {
+            await discordBot.pointsManager.removeAllPointsForUser(user)
+            await interaction.editReply(`Cleaned <@${user.id}>`)
+            return
+        }
+
         if (subcommand == 'add') {
             await discordBot.pointsManager.addPointsToUser(
                 user,

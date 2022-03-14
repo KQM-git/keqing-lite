@@ -55,4 +55,10 @@ export class PointsManager extends MutexBasedManager {
         const userData = discordBot.databaseManager.getUserDocument(user.id)
         return await userData.get('points')
     }
+
+    async removeAllPointsForUser(user: User) {
+        await this.getMutex(user.id).runExclusive(async () => {
+            await discordBot.databaseManager.getUserDocument(user.id).set('points', undefined)
+        })
+    }
 }
