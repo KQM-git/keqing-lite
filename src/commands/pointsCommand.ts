@@ -113,14 +113,15 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
             const limit = 50
             const offset = (page - 1) * limit
             const allPoints = await discordBot.pointsManager.getAllPoints()
+            const entries = Object.entries(allPoints)
             await interaction.editReply({
                 embeds: [{
                     title: 'Points list',
                     description: stripIndent`
-                    ${Object.entries(allPoints).length == 0 ? 'No Points' : ''}${Object.entries(allPoints).slice(offset, offset + limit).map(([userId, points]) => `<@${userId}>: ${points?.amount ?? 0}`).join('\n')}
+                    ${entries.length == 0 ? 'No Points' : ''}${entries.slice(offset, offset + limit).map(([userId, points]) => `<@${userId}>: ${points?.amount ?? 0}`).join('\n')}
                     `,
                     footer: {
-                        text: `Page ${page} of ${Math.ceil(Object.keys(allPoints).length/limit)}`
+                        text: `Page ${page} of ${Math.ceil(Object.keys(allPoints).length/limit)} (${entries.length})`
                     }
                 }]
             })
