@@ -101,12 +101,13 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
         if (subcommand == 'list') {
             const page = interaction.options.getNumber('page') ?? 1
             const limit = 50
+            const offset = (page - 1) * limit
             const allPoints = await discordBot.pointsManager.getAllPoints()
             await interaction.editReply({
                 embeds: [{
                     title: 'Points list',
                     description: stripIndent`
-                    ${Object.entries(allPoints).length == 0 ? 'No Points' : ''}${Object.entries(allPoints).map(([userId, points]) => `<@${userId}>: ${points?.amount ?? 0}`).join('\n')}
+                    ${Object.entries(allPoints).length == 0 ? 'No Points' : ''}${Object.entries(allPoints).slice(offset, offset + limit).map(([userId, points]) => `<@${userId}>: ${points?.amount ?? 0}`).join('\n')}
                     `,
                     footer: {
                         text: `Page ${page} of ${Math.ceil(Object.keys(allPoints).length/limit)}`
