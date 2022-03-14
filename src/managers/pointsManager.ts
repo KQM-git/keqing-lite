@@ -14,14 +14,14 @@ export class PointsManager extends MutexBasedManager {
         const allUserDocuments = discordBot.databaseManager.getAllUserDocuments(0, Infinity)
 
         return Object.fromEntries(
-            await Promise.all(
+            (await Promise.all(
                 <Promise<[string, UserData['points']]>[]> Object.entries(allUserDocuments).map(async ([key, value]) => {
                     const points = await value.get('points')
-                    if (points === undefined) return undefined
+                    if (points == undefined) return undefined
                     
                     return [key, points]
-                }).filter(x => x)
-            )
+                })
+            )).filter(x => x)
         )
     }
 
