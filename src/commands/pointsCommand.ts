@@ -129,7 +129,7 @@ export default class PointsCommand extends IModuleConfig('pointsSystem') impleme
 
         const user = interaction.options.getUser('user', true)
         if (subcommand == 'clean') {
-            await discordBot.pointsManager.removeAllPointsForUser(user)
+            await discordBot.pointsManager.removeAllPointsForUser(user, interaction.user)
             await interaction.editReply(`Cleaned <@${user.id}>`)
             return
         }

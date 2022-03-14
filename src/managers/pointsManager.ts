@@ -56,9 +56,15 @@ export class PointsManager extends MutexBasedManager {
         return await userData.get('points')
     }
 
-    async removeAllPointsForUser(user: User) {
+    async removeAllPointsForUser(user: User, assigner: User) {
         await this.getMutex(user.id).runExclusive(async () => {
             await discordBot.databaseManager.getUserDocument(user.id).set('points', undefined)
+            if (!this.moduleConfig?.loggingChannel) return
+
+            await discordBot.sendToChannel(this.moduleConfig?.loggingChannel, {
+                content: ` <@${assigner.id}> Cleaned <@${user.id}>`,
+                allowedMentions: { users: [] }
+            })
         })
     }
 }
