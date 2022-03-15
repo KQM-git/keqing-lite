@@ -133,7 +133,7 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
                 await thread.setLocked(true)
                 await thread.setArchived(true)
 
-                await interaction.editReply('Closed thread')
+                await interaction.channel?.send(`Thread <#${thread.id}> closed by <@${interaction.user.id}>`)
             } else {
                 await interaction.editReply('Thread already closed')
             }
