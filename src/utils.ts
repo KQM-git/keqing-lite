@@ -14,7 +14,7 @@ function substituteTemplateLiterals(str: string, constants: any): any {
         if (match.length <= 1) continue
         
         try {
-            const result = vm.runInNewContext(match[1], { ...constants })
+            const result = vm.runInNewContext(match[1], { ...constants, ...utilityConstants })
 
             const start = str.slice(0, match.index)
             const end = str.slice(templateRegex2.lastIndex)
@@ -69,7 +69,7 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
             if (!constants['$OPTIONS']) constants['$OPTIONS'] = {}
 
             if(typeof option.value == 'object')
-                constants['$OPTIONS'][option.name.toUpperCase()] = keysToUpperCase(option.value)
+                constants['$OPTIONS'][option.name.toUpperCase()] = keysToUpperCaseRecursive(option.value)
             else {
                 constants['$OPTIONS'][option.name.toUpperCase()] = option.value
             }
@@ -79,13 +79,13 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
     return constants
 }
 
-export function keysToUpperCase(obj: any): any {
+export function keysToUpperCaseRecursive(obj: any): any {
     const newObj: any = {}
 
     for (const key of Object.keys(obj)) {
         const value = obj[key]
         if (typeof value == 'object') {
-            newObj[key.toUpperCase()] = keysToUpperCase(value)
+            newObj[key.toUpperCase()] = keysToUpperCaseRecursive(value)
         } else {
             newObj[key.toUpperCase()] = value
         }
@@ -165,6 +165,35 @@ function getProxy<T extends object>(obj: T, constants: any): T {
     return obj
 }
 
-export function parseCommandName(str: string): string {
+export function cleanString(str: string): string {
     return str.split('.')[0].replace(/[^a-zA-Z]/gi, '').toLowerCase()
+}
+
+export function getValuesRecursive(obj: any): any[] {
+    return Object.values(obj)
+        .flatMap(x => {
+            if (Array.isArray(x)) {
+                return x
+            } else if (typeof x == 'object') {
+                return getValuesRecursive(x)
+            } else {
+                return [x]
+            }
+        })
+}
+
+export function randomFromList(list: any[]) {
+    if (list.length == 0) return undefined
+    return list[randomNumberBetween(0, list.length - 1)]
+}
+
+export function randomNumberBetween(start: number, end: number) {
+    return start + Math.round(Math.random() * (end - start))
+}
+
+const utilityConstants = {
+    getValuesRecursive,
+    keysToUpperCaseRecursive,
+    cleanString,
+    randomFromList
 }

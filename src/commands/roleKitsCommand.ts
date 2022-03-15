@@ -4,7 +4,7 @@ import { CommandInteraction, Guild, GuildMember, MessageActionRow, MessageButton
 import { discordBot } from '..'
 import { RoleKit, RoleKitsModule } from '../models/LiveConfig'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
-import { hasPermission, parseCommandName } from '../utils'
+import { hasPermission, cleanString } from '../utils'
 import { Command } from './command'
 
 export default class RoleKitsCommand implements Command {
@@ -44,7 +44,7 @@ export default class RoleKitsCommand implements Command {
             if(!value.exportAsCommand) return undefined
 
             return new SlashCommandBuilder()
-                .setName(parseCommandName(key))
+                .setName(cleanString(key))
                 .setDescription('Give `'+key+'` kit to a user')
                 .addMentionableOption(builder => builder
                     .setName('user')
