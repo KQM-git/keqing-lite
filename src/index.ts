@@ -2,7 +2,7 @@
 import { REST } from '@discordjs/rest'
 import AdmZip from 'adm-zip'
 import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { AnyChannel, Client, CommandInteraction, Guild, GuildMember, Intents, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
+import { AnyChannel, Client, CommandInteraction, ExcludeEnum, Guild, GuildMember, Intents, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
 import { https } from 'follow-redirects'
 import { Constants } from './constants'
 import { LocalCommandManager } from './managers/commandManager'
@@ -23,6 +23,7 @@ import { ReactRolesManager } from './managers/reactRolesManager'
 import { VanityRolesManager } from './managers/vanityRolesManager'
 import { DatabaseManager } from './managers/databaseManager'
 import { PointsManager } from './managers/pointsManager'
+import { ActivityTypes } from 'discord.js/typings/enums'
 
 class DiscordBotHandler {
     client = new Client({
@@ -81,7 +82,6 @@ class DiscordBotHandler {
     async initialize() {
         try {
             await this.loadCommands()
-            
 
             // When the client is ready, run this code (only once)
             this.client.once('ready', () => {
@@ -213,12 +213,35 @@ class DiscordBotHandler {
 
             // Login to Discord with your client's token
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
+
+            await this.loadActivity()
         } catch (error: any) {
             console.log('interal error')
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
             await this.logInternalError(error)
             this.client.destroy()
         }
+    }
+
+    async loadActivity() {
+        const activity = await this.databaseManager.getBotSettingsDocument().get('activity')
+        if (!activity) return
+
+        this.setActivity(activity.message, activity.type)
+    }
+
+    async setActivity(message: string, type: ExcludeEnum<typeof ActivityTypes, 'CUSTOM'>) {
+        await this.client.user?.setActivity({
+            name: message,
+            type: type as number
+        })
+
+        await this.databaseManager.getBotSettingsDocument().set('activity', { message, type: type })
+    }
+
+    async removeActivity() {
+        await this.client.user?.setActivity(undefined)
+        await this.databaseManager.getBotSettingsDocument().set('activity', undefined)
     }
 
     async logInternalError(error: any) {
