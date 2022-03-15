@@ -53,6 +53,7 @@ export default class ReactRolesCommand implements Command {
         const message = await interaction.reply({
             embeds: [{
                 title: config.title ?? 'Reaction Roles',
+                color: config.color,
                 description: (config.description ?? '')
                     + '\n\n'
                     + Object.entries(config.reactions ?? {})

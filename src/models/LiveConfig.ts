@@ -43,6 +43,7 @@ export interface ReactRolesConfig {
     title?: string
     description?: string
     permissions?: LiveInteractionPermissions
+    color?: number
     reactions?: Record<EmojiId, {
         role?: string
         description?: string
