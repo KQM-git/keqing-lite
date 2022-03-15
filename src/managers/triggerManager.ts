@@ -24,6 +24,10 @@ export class LiveTriggerManager {
         'triggers'
     )
 
+    getAllLoadedTriggers() {
+        return this.loadedTriggers
+    }
+
     loadTriggers(dir = '') {
         this.loadedTriggers.clear()
         for(const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
