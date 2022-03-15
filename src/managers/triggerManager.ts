@@ -118,7 +118,7 @@ export class LiveTriggerManager {
                 continue
             }
 
-            await message.reply(interactionMessage.toMessage())
+            await message.reply({ ...interactionMessage.toMessage(), allowedMentions: { repliedUser: false } })
         } 
     }
 
