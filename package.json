@@ -23,6 +23,7 @@
     "js-yaml": "^4.1.0",
     "msgpackr": "^1.5.4",
     "typescript": "^4.6.2",
+    "vm2": "^3.9.9",
     "write-file-atomic": "^4.0.1"
   },
   "devDependencies": {

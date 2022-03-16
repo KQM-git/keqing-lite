@@ -2,19 +2,23 @@
 
 import {MessageOptions, MessageActionRow, MessageSelectMenu, MessageButton, GuildMember, Interaction, CommandInteraction, PermissionResolvable } from 'discord.js'
 import { LiveInteraction, LiveInteractionPermissions } from './managers/liveCommandManager'
-import vm from 'vm'
+import { VM } from 'vm2'
 import yaml from 'js-yaml'
 
 function substituteTemplateLiterals(str: string, constants: any): any {
-    constants['$ENCODED'] = urlEncodeValues(constants)
-
     let templateRegex2 = /\$\{([\s\S]*?)\}/g
     let match
     while ((match = templateRegex2.exec(str)) != undefined) {
         if (match.length <= 1) continue
         
         try {
-            const result = vm.runInNewContext(match[1], { ...constants, ...utilityConstants })
+            const result = new VM({
+                allowAsync: false,
+                wasm: false,
+                eval: true,
+                timeout: 500,
+                sandbox: { ...constants, ...utilityConstants }
+            }).run(match[1])
 
             const start = str.slice(0, match.index)
             const end = str.slice(templateRegex2.lastIndex)
@@ -79,38 +83,6 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
     return constants
 }
 
-export function keysToUpperCaseRecursive(obj: any): any {
-    const newObj: any = {}
-
-    for (const key of Object.keys(obj)) {
-        const value = obj[key]
-        if (typeof value == 'object') {
-            newObj[key.toUpperCase()] = keysToUpperCaseRecursive(value)
-        } else {
-            newObj[key.toUpperCase()] = value
-        }
-
-    }
-
-    return newObj
-}
-
-export function urlEncodeValues(obj: any): any {
-    const newObj: any = {}
-
-    for (const key of Object.keys(obj ?? {})) {
-        const value = obj[key]
-        if (typeof value == 'object') {
-            newObj[key] = urlEncodeValues(value)
-        } else if (value) {
-            newObj[key] = encodeURIComponent(value)
-        }
-
-    }
-
-    return newObj
-}
-
 export function hasPermission(permissions: LiveInteractionPermissions | undefined, member: GuildMember | null | undefined, fallbackRolePermission: PermissionResolvable | undefined = undefined) {
     if (!member) {
         return false
@@ -165,6 +137,22 @@ function getProxy<T extends object>(obj: T, constants: any): T {
     return obj
 }
 
+export function keysToUpperCaseRecursive(obj: any): any {
+    const newObj: any = {}
+
+    for (const key of Object.keys(obj)) {
+        const value = obj[key]
+        if (typeof value == 'object') {
+            newObj[key.toUpperCase()] = keysToUpperCaseRecursive(value)
+        } else {
+            newObj[key.toUpperCase()] = value
+        }
+
+    }
+
+    return newObj
+}
+
 export function cleanString(str: string): string {
     return str.split('.')[0].replace(/[^a-zA-Z]/gi, '').toLowerCase()
 }
@@ -195,5 +183,6 @@ const utilityConstants = {
     getValuesRecursive,
     keysToUpperCaseRecursive,
     cleanString,
-    randomFromList
+    randomFromList,
+    randomNumberBetween
 }
