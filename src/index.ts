@@ -2,7 +2,7 @@
 import { REST } from '@discordjs/rest'
 import AdmZip from 'adm-zip'
 import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { AnyChannel, Client, CommandInteraction, ExcludeEnum, Guild, GuildMember, Intents, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
+import { AnyChannel, Client, CommandInteraction, ExcludeEnum, Guild, GuildMember, Intents, Interaction, Message, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
 import { https } from 'follow-redirects'
 import { Constants } from './constants'
 import { LocalCommandManager } from './managers/commandManager'
@@ -138,7 +138,7 @@ class DiscordBotHandler {
                     console.log('message reaction add')
                     await this.reactRolesManager.handleReaction(reaction, user)
                 } catch (err) {
-                    this.logInternalError(err)
+                    this.logInternalError(err, reaction.message)
                 }
             })
 
@@ -156,7 +156,7 @@ class DiscordBotHandler {
                     await message.channel.send({ content: 'Setting archive duration to **24** hours due to activity' })
                     await message.channel.setAutoArchiveDuration(1440)
                 } catch (err) {
-                    this.logInternalError(err)
+                    this.logInternalError(err, message)
                 }
             })
 
@@ -244,7 +244,7 @@ class DiscordBotHandler {
         await this.databaseManager.getBotSettingsDocument().set('activity', undefined)
     }
 
-    async logInternalError(error: any) {
+    async logInternalError(error: any, message: {url?: string} | undefined = undefined) {
         console.log(error)
 
         const channelId = Constants.BOT_INTERNAL_LOG_CHANNEL
@@ -257,7 +257,7 @@ class DiscordBotHandler {
 
         if (!channel?.isText()) return
 
-        await channel.send(`**INTERNAL UNHANDLED ERROR**\n${error}`)
+        await channel.send(`**INTERNAL UNHANDLED ERROR**${message?.url == undefined ? '' : '\nMESSAGE:' + message?.url}\n${error}`)
     }
 
     async loadCommands() {

@@ -21,6 +21,14 @@ function substituteTemplateLiterals(str: string, constants: any): any {
         if (match.length <= 1) continue
         
         try {
+            const mathjs = create(all)
+            mathjs.import({
+                import: function () { return 'Function import is disabled' },
+                createUnit: function () { return 'Function createUnit is disabled' },
+                evaluate: function () { return 'Function evaluate is disabled' },
+                parse: function () { return 'Function parse is disabled' },
+            }, { override: true })
+
             const result = new VM({
                 allowAsync: false,
                 wasm: false,
@@ -29,7 +37,7 @@ function substituteTemplateLiterals(str: string, constants: any): any {
                 sandbox: {
                     ...constants,
                     ...utilityConstants,
-                    mathjs: create(all)
+                    mathjs
                 }
             }).run(match[1])
 
@@ -42,7 +50,7 @@ function substituteTemplateLiterals(str: string, constants: any): any {
 
             templateRegex2 = /\$\{([\s\S]*?)\}/g
         } catch(error: any) {
-            throw new Error(`Error while evaluating JS:${match.index}\n${error.message}\n${error.stack}`)
+            throw new Error(`Error while evaluating JS:${match.index} \n${error.message}\n${error.stack}`)
         }
     }
 
