@@ -2,8 +2,17 @@
 
 import {MessageOptions, MessageActionRow, MessageSelectMenu, MessageButton, GuildMember, Interaction, CommandInteraction, PermissionResolvable } from 'discord.js'
 import { LiveInteraction, LiveInteractionPermissions } from './managers/liveCommandManager'
-import { VM } from 'vm2'
+import { NodeVM, VM } from 'vm2'
 import yaml from 'js-yaml'
+import { create, all} from 'mathjs'
+
+const utilityConstants = {
+    getValuesRecursive,
+    keysToUpperCaseRecursive,
+    cleanString,
+    randomFromList,
+    randomNumberBetween
+}
 
 function substituteTemplateLiterals(str: string, constants: any): any {
     let templateRegex2 = /\$\{([\s\S]*?)\}/g
@@ -17,7 +26,11 @@ function substituteTemplateLiterals(str: string, constants: any): any {
                 wasm: false,
                 eval: true,
                 timeout: 500,
-                sandbox: { ...constants, ...utilityConstants }
+                sandbox: {
+                    ...constants,
+                    ...utilityConstants,
+                    mathjs: create(all)
+                }
             }).run(match[1])
 
             const start = str.slice(0, match.index)
@@ -28,8 +41,8 @@ function substituteTemplateLiterals(str: string, constants: any): any {
                 return result
 
             templateRegex2 = /\$\{([\s\S]*?)\}/g
-        } catch(error) {
-            throw new Error(`Error while evaluating JS:${match.index}\n${error}`)
+        } catch(error: any) {
+            throw new Error(`Error while evaluating JS:${match.index}\n${error.message}\n${error.stack}`)
         }
     }
 
@@ -177,12 +190,4 @@ export function randomFromList(list: any[]) {
 
 export function randomNumberBetween(start: number, end: number) {
     return start + Math.round(Math.random() * (end - start))
-}
-
-const utilityConstants = {
-    getValuesRecursive,
-    keysToUpperCaseRecursive,
-    cleanString,
-    randomFromList,
-    randomNumberBetween
 }
