@@ -24,10 +24,10 @@ function substituteTemplateLiterals(str: string, constants: any): any {
             const mathjs = create(all)
             const mathjsEvaluate = mathjs.evaluate
             mathjs.import({
-                import: function () { return 'Function `import` is disabled' },
-                createUnit: function () { return 'Function `createUnit` is disabled' },
-                evaluate: function () { return 'Function `evaluate` is disabled' },
-                parse: function () { return 'Function `parse` is disabled' },
+                'import': function () { return 'Function `import` is disabled' },
+                'createUnit': function () { return 'Function `createUnit` is disabled' },
+                'evaluate': function () { return 'Function `evaluate` is disabled' },
+                'parse': function () { return 'Function `parse` is disabled' },
             }, { override: true })
 
             const result = new VM({
