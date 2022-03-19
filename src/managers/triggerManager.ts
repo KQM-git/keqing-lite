@@ -24,8 +24,15 @@ export class LiveTriggerManager {
         'triggers'
     )
 
+    getAllLoadedTriggers() {
+        return this.loadedTriggers
+    }
+
     loadTriggers(dir = '') {
-        this.loadedTriggers.clear()
+        if(dir.length == 0) {
+            this.loadedTriggers.clear()
+        }
+        
         for(const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
             const filePath = path.join(LiveTriggerManager.liveTriggersDir, dir, file)
 
@@ -36,8 +43,9 @@ export class LiveTriggerManager {
 
             if (!file.endsWith('yaml')) continue
 
-            const trigger = yaml.load(
-                fs.readFileSync(filePath).toString()
+            const trigger = loadYaml(
+                fs.readFileSync(filePath).toString(),
+                discordBot.liveConstants
             ) as LiveTrigger
             
             console.log(trigger.match, path.join(dir, file))
@@ -113,7 +121,7 @@ export class LiveTriggerManager {
                 continue
             }
 
-            await message.reply(interactionMessage.toMessage())
+            await message.reply({ ...interactionMessage.toMessage(), allowedMentions: { repliedUser: false } })
         } 
     }
 

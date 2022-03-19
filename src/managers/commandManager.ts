@@ -13,23 +13,28 @@ export class LocalCommandManager {
         const commandFiles = await fsp.readdir(commandsDir)
         this.loadedCommands = {}
 
-        return <RESTPostAPIApplicationCommandsJSONBody[]> commandFiles.map(file => {
-            if (!file.endsWith('.js')) return undefined
+        return <RESTPostAPIApplicationCommandsJSONBody[]> commandFiles.flatMap(file => {
+            if (!file.endsWith('.js')) return []
 
             const commandPath = path.join(commandsDir, file)
 
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const CommandClass: (new () => Command | undefined) | undefined = require(commandPath)?.['default']
-            if(!CommandClass) return undefined
+            if(!CommandClass) return []
 
             const commandInstance = new CommandClass()
             const metadata = commandInstance?.getCommandMetadata()
-            if (!metadata) return undefined
-
+            if (!metadata) return []
+            
             this.loadedCommands[metadata.name] = commandPath
 
-            return metadata
-        }).filter(x => x)
+            const aliases = commandInstance?.getCommandAliasMetadata?.() ?? []
+            for (const alias of aliases) {
+                this.loadedCommands[alias.name] = commandPath
+            }
+
+            return [metadata, ...aliases]
+        })
     }
 
     resolveLocalCommandClass(name: string): (new () => IExecutableCommand | IAutocompletableCommand) | undefined {

@@ -2,7 +2,7 @@
 import { REST } from '@discordjs/rest'
 import AdmZip from 'adm-zip'
 import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { AnyChannel, Client, CommandInteraction, Guild, GuildMember, Intents, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
+import { AnyChannel, Client, CommandInteraction, ExcludeEnum, Guild, GuildMember, Intents, Interaction, Message, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
 import { https } from 'follow-redirects'
 import { Constants } from './constants'
 import { LocalCommandManager } from './managers/commandManager'
@@ -23,6 +23,7 @@ import { ReactRolesManager } from './managers/reactRolesManager'
 import { VanityRolesManager } from './managers/vanityRolesManager'
 import { DatabaseManager } from './managers/databaseManager'
 import { PointsManager } from './managers/pointsManager'
+import { ActivityTypes } from 'discord.js/typings/enums'
 
 class DiscordBotHandler {
     client = new Client({
@@ -81,7 +82,6 @@ class DiscordBotHandler {
     async initialize() {
         try {
             await this.loadCommands()
-            
 
             // When the client is ready, run this code (only once)
             this.client.once('ready', () => {
@@ -138,12 +138,13 @@ class DiscordBotHandler {
                     console.log('message reaction add')
                     await this.reactRolesManager.handleReaction(reaction, user)
                 } catch (err) {
-                    this.logInternalError(err)
+                    this.logInternalError(err, reaction.message)
                 }
             })
 
             this.client.on('messageCreate', async message => {
                 try {
+                    console.log('messageCreate')
                     await this.modMailManager.handleMessage(message)
                     await this.liveTriggerManager.parseMessage(message)
                     
@@ -155,7 +156,7 @@ class DiscordBotHandler {
                     await message.channel.send({ content: 'Setting archive duration to **24** hours due to activity' })
                     await message.channel.setAutoArchiveDuration(1440)
                 } catch (err) {
-                    this.logInternalError(err)
+                    this.logInternalError(err, message)
                 }
             })
 
@@ -198,7 +199,11 @@ class DiscordBotHandler {
                     }
 
                     console.error(error)
-                    await interaction.followUp({ content: '**ERROR**: ' + error, ephemeral: true })
+                    if (interaction.replied || interaction.deferred) {
+                        await interaction.editReply({ content: '**ERROR**: ' + error })
+                    } else {
+                        await interaction.reply({content: `**ERROR:** ${error}`, ephemeral: true})
+                    }
                 }
             })
 
@@ -208,6 +213,8 @@ class DiscordBotHandler {
 
             // Login to Discord with your client's token
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
+
+            await this.loadActivity()
         } catch (error: any) {
             console.log('interal error')
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
@@ -216,7 +223,28 @@ class DiscordBotHandler {
         }
     }
 
-    async logInternalError(error: any) {
+    async loadActivity() {
+        const activity = await this.databaseManager.getBotSettingsDocument().get('activity')
+        if (!activity) return
+
+        this.setActivity(activity.message, activity.type)
+    }
+
+    async setActivity(message: string, type: ExcludeEnum<typeof ActivityTypes, 'CUSTOM'>) {
+        await this.client.user?.setActivity({
+            name: message,
+            type: type as number
+        })
+
+        await this.databaseManager.getBotSettingsDocument().set('activity', { message, type: type })
+    }
+
+    async removeActivity() {
+        await this.client.user?.setActivity(undefined)
+        await this.databaseManager.getBotSettingsDocument().set('activity', undefined)
+    }
+
+    async logInternalError(error: any, message: {url?: string} | undefined = undefined) {
         console.log(error)
 
         const channelId = Constants.BOT_INTERNAL_LOG_CHANNEL
@@ -229,8 +257,7 @@ class DiscordBotHandler {
 
         if (!channel?.isText()) return
 
-        await channel.send(`**INTERNAL UNHANDLED ERROR**\n${error}`)
-        this.client.destroy()
+        await channel.send(`**INTERNAL UNHANDLED ERROR**${message?.url == undefined ? '' : '\nMESSAGE:' + message?.url}\n${error}`)
     }
 
     async loadCommands() {
@@ -284,6 +311,7 @@ class DiscordBotHandler {
         )
 
         if (!fs.existsSync(liveConfigPath)) {
+            console.log('Live config dont exist')
             return
         }
 
@@ -295,7 +323,7 @@ class DiscordBotHandler {
 
             console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
         } catch(error: any) {
-            new Error('Unable to load config\n' + error)
+            throw new Error('Unable to load config\n' + error)
         }
     }
 

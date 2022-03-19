@@ -2,19 +2,44 @@
 
 import {MessageOptions, MessageActionRow, MessageSelectMenu, MessageButton, GuildMember, Interaction, CommandInteraction, PermissionResolvable } from 'discord.js'
 import { LiveInteraction, LiveInteractionPermissions } from './managers/liveCommandManager'
-import vm from 'vm'
+import { NodeVM, VM } from 'vm2'
 import yaml from 'js-yaml'
+import { create, all} from 'mathjs'
+
+const utilityConstants = {
+    getValuesRecursive,
+    keysToUpperCaseRecursive,
+    cleanString,
+    randomFromList,
+    randomNumberBetween
+}
 
 function substituteTemplateLiterals(str: string, constants: any): any {
-    constants['$ENCODED'] = urlEncodeValues(constants)
-
     let templateRegex2 = /\$\{([\s\S]*?)\}/g
     let match
     while ((match = templateRegex2.exec(str)) != undefined) {
         if (match.length <= 1) continue
         
         try {
-            const result = vm.runInNewContext(match[1], { ...constants })
+            const mathjs = create(all)
+            mathjs.import({
+                import: function () { return 'Function import is disabled' },
+                createUnit: function () { return 'Function createUnit is disabled' },
+                evaluate: function () { return 'Function evaluate is disabled' },
+                parse: function () { return 'Function parse is disabled' },
+            }, { override: true })
+
+            const result = new VM({
+                allowAsync: false,
+                wasm: false,
+                eval: true,
+                timeout: 500,
+                sandbox: {
+                    ...constants,
+                    ...utilityConstants,
+                    mathjs
+                }
+            }).run(match[1])
 
             const start = str.slice(0, match.index)
             const end = str.slice(templateRegex2.lastIndex)
@@ -24,8 +49,8 @@ function substituteTemplateLiterals(str: string, constants: any): any {
                 return result
 
             templateRegex2 = /\$\{([\s\S]*?)\}/g
-        } catch(error) {
-            throw new Error(`Error while evaluating JS:${match.index}\n${error}`)
+        } catch(error: any) {
+            throw new Error(`Error while evaluating JS:${match.index} \n${error.message}\n${error.stack}`)
         }
     }
 
@@ -69,7 +94,7 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
             if (!constants['$OPTIONS']) constants['$OPTIONS'] = {}
 
             if(typeof option.value == 'object')
-                constants['$OPTIONS'][option.name.toUpperCase()] = keysToUpperCase(option.value)
+                constants['$OPTIONS'][option.name.toUpperCase()] = keysToUpperCaseRecursive(option.value)
             else {
                 constants['$OPTIONS'][option.name.toUpperCase()] = option.value
             }
@@ -77,38 +102,6 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
     }
 
     return constants
-}
-
-export function keysToUpperCase(obj: any): any {
-    const newObj: any = {}
-
-    for (const key of Object.keys(obj)) {
-        const value = obj[key]
-        if (typeof value == 'object') {
-            newObj[key.toUpperCase()] = keysToUpperCase(value)
-        } else {
-            newObj[key.toUpperCase()] = value
-        }
-
-    }
-
-    return newObj
-}
-
-export function urlEncodeValues(obj: any): any {
-    const newObj: any = {}
-
-    for (const key of Object.keys(obj ?? {})) {
-        const value = obj[key]
-        if (typeof value == 'object') {
-            newObj[key] = urlEncodeValues(value)
-        } else if (value) {
-            newObj[key] = encodeURIComponent(value)
-        }
-
-    }
-
-    return newObj
 }
 
 export function hasPermission(permissions: LiveInteractionPermissions | undefined, member: GuildMember | null | undefined, fallbackRolePermission: PermissionResolvable | undefined = undefined) {
@@ -163,4 +156,46 @@ function getProxy<T extends object>(obj: T, constants: any): T {
     }
 
     return obj
+}
+
+export function keysToUpperCaseRecursive(obj: any): any {
+    const newObj: any = {}
+
+    for (const key of Object.keys(obj)) {
+        const value = obj[key]
+        if (typeof value == 'object') {
+            newObj[key.toUpperCase()] = keysToUpperCaseRecursive(value)
+        } else {
+            newObj[key.toUpperCase()] = value
+        }
+
+    }
+
+    return newObj
+}
+
+export function cleanString(str: string): string {
+    return str.split('.')[0].replace(/[^a-zA-Z]/gi, '').toLowerCase()
+}
+
+export function getValuesRecursive(obj: any): any[] {
+    return Object.values(obj)
+        .flatMap(x => {
+            if (Array.isArray(x)) {
+                return x
+            } else if (typeof x == 'object') {
+                return getValuesRecursive(x)
+            } else {
+                return [x]
+            }
+        })
+}
+
+export function randomFromList(list: any[]) {
+    if (list.length == 0) return undefined
+    return list[randomNumberBetween(0, list.length - 1)]
+}
+
+export function randomNumberBetween(start: number, end: number) {
+    return start + Math.round(Math.random() * (end - start))
 }

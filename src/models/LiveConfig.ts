@@ -43,6 +43,7 @@ export interface ReactRolesConfig {
     title?: string
     description?: string
     permissions?: LiveInteractionPermissions
+    color?: number
     reactions?: Record<EmojiId, {
         role?: string
         description?: string
@@ -68,6 +69,7 @@ export interface RoleKit {
     addRoles?: RoleId[]
     removeRoles?: RoleId[]
     permissions?: LiveInteractionPermissions
+    exportAsCommand?: boolean
 }
 
 export interface SupportThreadsModule extends ModuleConfig {

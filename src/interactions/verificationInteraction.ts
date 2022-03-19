@@ -28,10 +28,6 @@ export default class VerificationInteraction extends MultiButtonOptionInteractio
                                 .setLabel('Accept')
                                 .setStyle('DANGER')
                                 .setCustomId('verificationInteraction#accept'),
-                            new MessageButton()
-                                .setLabel('Deny')
-                                .setStyle('SECONDARY')
-                                .setCustomId('verificationInteraction#deny')
                         ])
                 ]
             })
@@ -44,8 +40,6 @@ export default class VerificationInteraction extends MultiButtonOptionInteractio
         case 'accept':
             this.verifyGuildMember(interaction.member as GuildMember, interaction)
             break
-        case 'deny':
-            return
         default:
             await interaction.editReply({ content: '**ERROR:** Invalid option selected' })
             break

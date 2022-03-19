@@ -53,7 +53,7 @@ export default class VanityRoleCommand implements Command {
         }
 
         let iconEmoji: GuildEmoji | undefined = undefined
-        const iconString = interaction.options.getString('iconurl', false)
+        const iconString = interaction.options.getString('emote', false)
         if (iconString) {
             iconEmoji = await (await discordBot.guild).emojis.fetch(iconString.replace(/[<>]/gi, '').split(':').pop() ?? '')
         }

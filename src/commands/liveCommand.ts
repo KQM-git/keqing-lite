@@ -3,7 +3,7 @@ import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
 import { CommandInteraction, GuildMember } from 'discord.js'
 import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
-import { constantsFromObject, hasPermission } from '../utils'
+import { constantsFromObject, hasPermission, cleanString } from '../utils'
 import { Command } from './command'
 
 export default class LiveCommand implements Command {
@@ -25,7 +25,7 @@ export default class LiveCommand implements Command {
         const constants = constantsFromObject(interaction)
 
         if(liveCommandName == 'livecommand') {
-            liveCommandName = discordBot.liveCommandManager.parseCommandName(interaction.options.getString('command') ?? '')
+            liveCommandName = cleanString(interaction.options.getString('command') ?? '')
         }
         
         if(!liveCommandName || liveCommandName == ''){

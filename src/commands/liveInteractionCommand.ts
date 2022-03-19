@@ -6,7 +6,7 @@ import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 import { Command, IAutocompletableCommand } from './command'
 
-class SlashCommandAutocompleteStringOption extends SlashCommandStringOption {
+export class SlashCommandAutocompleteStringOption extends SlashCommandStringOption {
     override toJSON(): {
         autocomplete: boolean; choices: APIApplicationCommandOptionChoice[] | undefined; type: ApplicationCommandOptionType.String | ApplicationCommandOptionType.Integer | ApplicationCommandOptionType.Number; name: string; description: string; default?: boolean | undefined; required?: boolean | undefined;
     } | {

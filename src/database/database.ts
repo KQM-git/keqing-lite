@@ -32,6 +32,18 @@ export class DocumentCollection<T> {
         this.documents.set(name, document)
         return document
     }
+
+    getAllDocuments(defaultValue: T, page: number, limit: number): Record<string, Document<T>> {
+        const documents: Record<string, Document<T>> = {}
+        const files = fs.readdirSync(this.folderPath).slice(page * limit, (page + 1) * limit)
+
+        for (const file of files) {
+            const fileName = file.slice(0, -3)
+            documents[fileName] = this.getDocument(fileName, defaultValue)
+        }
+
+        return documents
+    }
 }
 
 export class Document<T> {
