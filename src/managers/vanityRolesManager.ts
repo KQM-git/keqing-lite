@@ -140,7 +140,7 @@ export class VanityRolesManager extends MutexBasedManager {
                             value: stripIndent`
                                 **name**: ${role.name}
                                 **color**: ${role.color}
-                                **icon**: ${role.iconURL() ? `[URL](${role.iconURL()})` : 'None'}
+                                **emote**: ${role.iconURL() ? `[URL](${role.iconURL()})` : 'None'}
                             `,
                             inline: true
                         }
