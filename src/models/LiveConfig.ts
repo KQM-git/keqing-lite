@@ -78,7 +78,7 @@ export interface SupportThreadsModule extends ModuleConfig {
 
 export interface VerificationModule extends ModuleConfig {
     welcomeChannel?: ChannelId
-    verifiedRole?: ChannelId
+    verifiedRole?: RoleId | RoleId[]
 
     interactions?: {
         initialMessageInteractionPath?: string

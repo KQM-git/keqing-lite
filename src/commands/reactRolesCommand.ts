@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
-import { CommandInteraction, Guild, GuildMember, Message, MessageActionRow, MessageButton } from 'discord.js'
+import { CommandInteraction, Emoji, Guild, GuildMember, Message, MessageActionRow, MessageButton } from 'discord.js'
 import { discordBot } from '..'
 import { LiveInteractionManager } from '../managers/liveInteractionManager'
 import { ReactRolesConfig, ReactRolesModule, RoleKit, RoleKitsModule } from '../models/LiveConfig'
@@ -50,6 +50,7 @@ export default class ReactRolesCommand implements Command {
             return
         }
 
+        const guild = await discordBot.guild
         const message = await interaction.reply({
             embeds: [{
                 title: config.title ?? 'Reaction Roles',
@@ -57,8 +58,9 @@ export default class ReactRolesCommand implements Command {
                 description: (config.description ?? '')
                     + '\n\n'
                     + Object.entries(config.reactions ?? {})
-                        .map(([emojiId, config]) => `<:${emojiId}> : ${config.description ?? `<@&${config.role ?? '0'}>`}`)
-                        .join('\n'),
+                        .map(([emojiId, config]) => {
+                            return `${emojiId.includes(':') ? `<:${emojiId}>` : emojiId} : ${config.description ?? `<@&${config.role ?? '0'}>`}`
+                        }).join('\n'),
                 footer: {
                     text: `reactRolesManager#${configId}`
                 },

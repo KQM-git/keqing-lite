@@ -22,13 +22,14 @@ export class ReactRolesManager {
         const configId = reaction.message.embeds[0].footer.text.split('#')[1]
         const config = this.configs[configId]
         if (!config) {
-            throw new Error(`Unable to find config with id ${configId} message: ${reaction.message.url}`)
+            throw new Error(`Unable to find config with id ${configId}`)
         }
 
-        console.log(reaction.emoji.identifier)
-        const roleId = config.reactions?.[reaction.emoji.identifier]?.role
+        const emojiId = decodeURIComponent(reaction.emoji.identifier)
+        console.log(emojiId)
+        const roleId = config.reactions?.[emojiId]?.role
         if (!roleId) {
-            throw new Error(`Unable to get role for reactRoles config ${configId} emoji: ${reaction.emoji.identifier} message: ${reaction.message.url}`)
+            throw new Error(`Unable to get role for reactRoles config ${configId} emoji: ${emojiId}`)
         }
 
         const member = await reaction.message.guild?.members.fetch(user.id)
