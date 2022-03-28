@@ -84,7 +84,7 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
             'ID': obj.user.id,
             'USERNAME': obj.user.username,
             'TAG': obj.user.discriminator,
-            'AVATAR': obj.user.displayAvatarURL()
+            'AVATAR': obj.user.displayAvatarURL({ size: 4096, format: 'png' })
         }
     }
 
