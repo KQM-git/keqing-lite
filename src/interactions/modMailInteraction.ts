@@ -57,7 +57,7 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
             const existingThreadId = await userDocument.get('modMailThread')
             const existingThread = existingThreadId != undefined ? await threadChannel.threads.fetch(existingThreadId) : undefined
 
-            if (existingThread?.archived == false) {
+            if (existingThread != undefined && !existingThread.archived) {
                 thread = existingThread
             } else {
                 thread = await threadChannel.threads.create({
@@ -70,16 +70,7 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
                 await userDocument.set('modMailThread', thread.id)
                 
                 await thread.members.add(interaction.user.id)
-            }
-
-            await thread.send({
-                content: `**User ID**: ${interaction.user.username}#${interaction.user.discriminator} - ${interaction.user.id}\n**Message**: ${message.cleanContent}\n**Attachments**:\n${message.attachments.map(x => x.proxyURL).join('\n')}`,
-                allowedMentions: {
-                    users: []
-                }
-            })
-
-            if (existingThread?.archived) {
+                
                 await loggingChannel.send({
                     content: `You've got Mail, @here! **${interaction.user.username}#${interaction.user.discriminator}** - ${interaction.user.id} opened a thread`,
                     components: [
@@ -97,6 +88,13 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
                     ]
                 })
             }
+
+            await thread.send({
+                content: `**User ID**: ${interaction.user.username}#${interaction.user.discriminator} - ${interaction.user.id}\n**Message**: ${message.cleanContent}\n**Attachments**:\n${message.attachments.map(x => x.proxyURL).join('\n')}`,
+                allowedMentions: {
+                    users: []
+                }
+            })
 
             await interaction.editReply(`Successfully opened a private thread with the admins, please use <#${thread.id}> for further communication`)
         } else if (option.startsWith('closeThread')) {
