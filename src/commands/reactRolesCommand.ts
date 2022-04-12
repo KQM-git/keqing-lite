@@ -40,6 +40,7 @@ export default class ReactRolesCommand implements Command {
             return
         }
 
+        const guild = await discordBot.guild
         const configId = interaction.options.getString('config', true)
         const config = this.configs[configId]
         if (!config) {
@@ -56,9 +57,12 @@ export default class ReactRolesCommand implements Command {
                 color: config.color,
                 description: (config.description ?? '')
                     + '\n\n'
-                    + Object.entries(config.reactions ?? {})
-                        .map(([emojiId, config]) => `<:${emojiId}> : ${config.description ?? `<@&${config.role ?? '0'}>`}`)
-                        .join('\n'),
+                    + (await Promise.all(
+                        Object.entries(config.reactions ?? {})
+                            .map(async ([emojiId, config]) => {
+                                return `${(await guild.emojis.fetch(emojiId)).toString()} : ${config.description ?? `<@&${config.role ?? '0'}>`}`
+                            })
+                    )).join('\n'),
                 footer: {
                     text: `reactRolesManager#${configId}`
                 },

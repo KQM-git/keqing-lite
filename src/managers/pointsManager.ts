@@ -29,8 +29,10 @@ export class PointsManager extends MutexBasedManager {
         await this.getMutex(user.id).runExclusive(async () => {
             const userData = discordBot.databaseManager.getUserDocument(user.id)
 
-            await userData.modifyValue('points', async (points) => {
-                if (!points) points = { amount: 0, history: [] }
+            await userData.modifyValue(async (data) => {
+                if (!data.points) data.points = { amount: 0, history: [] }
+
+                const { points } = data
                 
                 points.amount += amount
                 points.history.push({
@@ -38,8 +40,6 @@ export class PointsManager extends MutexBasedManager {
                     reason,
                     assigner: assigner.id
                 })
-
-                return points
             })
 
             if (!this.moduleConfig?.loggingChannel) return

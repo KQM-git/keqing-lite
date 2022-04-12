@@ -1,6 +1,7 @@
 export interface SyncDBAdapter<T> {
     read(): T | undefined
     write(data: T): void
+    delete(): void
 }
 
 export class SyncDB<T> {
@@ -16,5 +17,9 @@ export class SyncDB<T> {
 
     write() {
         this.adapter.write(this.data)
+    }
+
+    delete() {
+        this.adapter.delete()
     }
 }

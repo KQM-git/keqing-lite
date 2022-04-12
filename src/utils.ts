@@ -199,3 +199,14 @@ export function randomFromList(list: any[]) {
 export function randomNumberBetween(start: number, end: number) {
     return start + Math.round(Math.random() * (end - start))
 }
+
+export function sleep(ms: number) {
+    return new Promise(res => setTimeout(res, ms))
+}
+
+export async function invokeRepeatedly(func: () => Promise<void> | void, interval: number, invocations = Infinity): Promise<void> {
+    for (let i = 0; i < invocations; i++) {
+        await func()
+        await sleep(interval)
+    }
+}
