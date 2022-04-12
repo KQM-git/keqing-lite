@@ -4,6 +4,7 @@ import path from 'path'
 import { Document, DocumentDatabase } from '../database/database'
 
 export interface UserData {
+    modMailThread?: string
     vanityRoleId?: string
     points?: {
         amount: number
