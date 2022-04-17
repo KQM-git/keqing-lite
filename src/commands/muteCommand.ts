@@ -43,18 +43,18 @@ export default class MuteCommand implements Command {
 
         await interaction.deferReply()
 
-        const user = interaction.options.getUser('user', true)
+        const user = interaction.options.getMember('user', true)
+        if (Array.isArray(user.roles)) {
+            throw new Error('something went wrong, please report to Paper')
+        }
+
         const duration = this.parseHumanDate(interaction.options.getString('duration', true))
         const reason = interaction.options.getString('reason', true)
 
         const guild = await discordBot.guild
-        const mutedMember = await guild.members.fetch(user.id)
-        if (!mutedMember) {
-            throw new Error('Muted member not found on the server')
-        }
 
         await discordBot.moderationManager.muteMember(
-            mutedMember,
+            user as GuildMember,
             interaction.user,
             reason,
             duration.getTime() - Date.now()
