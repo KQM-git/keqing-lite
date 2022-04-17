@@ -18,7 +18,7 @@ export default class MuteCommand implements Command {
         return new SlashCommandBuilder()
             .setName('mute')
             .setDescription('Mute a user for a specified duration')
-            .addMentionableOption(builder => builder
+            .addUserOption(builder => builder
                 .setName('user')
                 .setDescription('the user to mute')
                 .setRequired(true)
