@@ -13,7 +13,7 @@ export class ModerationModuleManager extends MutexBasedManager {
         super()
 
         // Tick every minute
-        setInterval(this.processTasks, 60_000)
+        setInterval(() => this.processTasks(), 60_000)
     }
 
     async processTasks() {
