@@ -88,18 +88,25 @@ export class ModerationModuleManager extends MutexBasedManager {
             embeds: [{
                 title: 'Moderation Action',
                 description: stripIndent`
-                    Queue Time: <t:${action.queueTime.getTime()}>
-                    Exec Time: <t:${action.executionTime.getTime()}>
-                    Reason: ${action.reason}
-                    Moderator: <@${action.moderator}>
-                    Target: <@${action.target}>
+                Queue Time: <t:${action.queueTime.getTime()}>
+                Exec Time: <t:${action.executionTime.getTime()}>
+                Reason: ${action.reason}
+                Moderator: <@${action.moderator}>
+                Target: <@${action.target}>
                 `,
                 fields: action.subactions.map(action => ({
                     name: 'Action',
                     value: stripIndent`
-                        Type: ${action.type}
-                        Metadata: ${action.metadata}
-                    `
+                    Type: ${action.type}
+                    Metadata: ${(() => {
+                        switch (action.type) {
+                        case ModerationActionType.ROLE_ADD:
+                        case ModerationActionType.ROLE_REMOVE:
+                            return `<@&${action.metadata}>`
+                        default:
+                            return action.metadata
+                        }
+                    })()}`
                 }))
             }]
         })
