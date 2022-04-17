@@ -24,6 +24,7 @@ import { VanityRolesManager } from './managers/vanityRolesManager'
 import { DatabaseManager } from './managers/databaseManager'
 import { PointsManager } from './managers/pointsManager'
 import { ActivityTypes } from 'discord.js/typings/enums'
+import { ModerationModuleManager } from './managers/moderationModuleManager'
 
 class DiscordBotHandler {
     client = new Client({
@@ -71,6 +72,7 @@ class DiscordBotHandler {
     vanityRolesManager = new VanityRolesManager()
     databaseManager = new DatabaseManager()
     pointsManager = new PointsManager()
+    moderationManager = new ModerationModuleManager()
 
     liveConstants: any | undefined = {}
     liveConfig: LiveConfig = {}
