@@ -60,7 +60,7 @@ export default class MuteCommand implements Command {
             duration.getTime() - Date.now()
         )
 
-        await interaction.editReply(`Muted <@${mutedMember.id}> for ${duration}. Reason: *${reason}*`)
+        await interaction.editReply(`Muted ${user} for ${duration}. Reason: *${reason}*`)
     }
 
     parseHumanDate(str: string) {
