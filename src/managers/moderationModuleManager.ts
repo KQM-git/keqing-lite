@@ -89,8 +89,8 @@ export class ModerationModuleManager extends MutexBasedManager {
             embeds: [{
                 title: 'Moderation Action',
                 description: stripIndent`
-                Queue Time: <t:${action.queueTime.getTime()}>
-                Exec Time: <t:${action.executionTime.getTime()}>
+                Queue Time: <t:${(action.queueTime.getTime()/1000).toFixed(0)}>
+                Exec Time: <t:${(action.executionTime.getTime()/1000).toFixed(0)}>
                 Reason: ${action.reason}
                 Moderator: <@${action.moderator}>
                 Target: <@${action.target}>
