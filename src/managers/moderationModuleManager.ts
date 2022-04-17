@@ -23,6 +23,7 @@ export class ModerationModuleManager extends MutexBasedManager {
                 await document.modifyValue(async action => {
                     await this.handleModerationAction(action)
                 })
+                await document.deleteDocument()
             }
         })
     }
