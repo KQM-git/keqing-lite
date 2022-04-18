@@ -37,11 +37,11 @@ export interface UserWarnConfig {
     permissions?: LiveInteractionPermissions
 
     levels?: {
-        action: 'MUTE' | 'BAN'
-        duration?: number
+        action: 'MUTE' | 'BAN' | 'NOTICE'
+        duration?: string
     }[]
 
-    cooldownPeriod?: number
+    cooldownPeriod?: string
 }
 
 export interface UserMuteConfig {

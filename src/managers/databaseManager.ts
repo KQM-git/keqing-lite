@@ -2,7 +2,7 @@ import { ExcludeEnum } from 'discord.js'
 import { ActivityTypes } from 'discord.js/typings/enums'
 import path from 'path'
 import { Document, DocumentDatabase } from '../database/database'
-import { RoleId } from '../models/LiveConfig'
+import { RoleId, UserWarnConfig } from '../models/LiveConfig'
 
 export interface UserData {
     notes?: {
@@ -11,7 +11,7 @@ export interface UserData {
         date: string
     }[]
     warns?: {
-        action?: string
+        action?: NonNullable<UserWarnConfig['levels']>[0]
         moderator: string
         reason: string
         date: Date
@@ -49,6 +49,9 @@ export interface ModerationAction {
 export class ModerationActionType {
     static ROLE_REMOVE = 'REMOVE ROLE'
     static ROLE_ADD = 'ADD ROLE'
+
+    static BAN_USER = 'BAN USER'
+    static UNBAN_USER = 'UNBAN USER'
 }
 
 export class DatabaseManager {

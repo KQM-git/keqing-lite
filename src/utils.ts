@@ -210,3 +210,28 @@ export async function invokeRepeatedly(func: () => Promise<void> | void, interva
         await sleep(interval)
     }
 }
+
+export function parseHumanDate(str: string) {
+    const matches = str.matchAll(/(\d+)\s?([A-z]+)/gi)
+    let time = 0
+    for (const match of matches) {
+        match.shift()
+        time += parseFloat(match[0]) * (parseDateComponent(match[1]) ?? 0)
+    }
+    return time
+}
+
+function parseDateComponent(str: string) {
+    switch (str.toLowerCase()) {
+    case 'y': case 'year': case 'yr': case 'yrs': case 'years':
+        return 3.156e+10
+    case 'min': case 'minutes': case 'minute': case 'mins':
+        return 60000
+    case 'd': case 'day': case 'days':
+        return 8.64e+7
+    case 'h': case 'hr': case 'hrs': case 'hour': case 'hours':
+        return 3.6e+6
+    default:
+        return undefined
+    }
+}

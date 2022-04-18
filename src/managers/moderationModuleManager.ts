@@ -1,7 +1,9 @@
 import { stripIndent } from 'common-tags'
 import { GuildMember, User } from 'discord.js'
 import { discordBot } from '..'
-import { ModerationAction, ModerationActionType } from './databaseManager'
+import { UserWarnConfig } from '../models/LiveConfig'
+import { parseHumanDate } from '../utils'
+import { ModerationAction, ModerationActionType, UserData } from './databaseManager'
 import { MutexBasedManager } from './mutexBasedManager'
 
 export class ModerationModuleManager extends MutexBasedManager {
@@ -13,7 +15,7 @@ export class ModerationModuleManager extends MutexBasedManager {
         super()
 
         // Tick every minute
-        setInterval(() => this.processTasks(), 60_000)
+        setInterval(() => this.processTasks(), 30_000)
     }
 
     async processTasks() {
@@ -26,6 +28,90 @@ export class ModerationModuleManager extends MutexBasedManager {
                 await document.deleteDocument()
             }
         })
+    }
+
+    async warnMember(member: GuildMember, moderator: User, reason: string) {
+        await this.getMutex(this.DEFAULT_MUTEX_ID).runExclusive(async () => {
+            const document = discordBot.databaseManager.getUserDocument(member.id)
+            const date = new Date()
+            const moderationAction: ModerationAction = {
+                executionTime: date,
+                moderator: moderator.id,
+                queueTime: date,
+                reason: reason,
+                subactions: [],
+                target: member.id
+            }
+
+            await document.modifyValue(async user => {
+                const action = this.getWarnAction(user.warns, this.moduleConfig?.warnConfig?.levels, this.moduleConfig?.warnConfig?.cooldownPeriod)
+                if (!action) {
+                    throw new Error('Unable to determine the action to take for this warn')
+                }
+                
+                switch (action.action) {
+                case 'BAN':
+                    await member.ban({ reason: reason })
+                        
+                    moderationAction.subactions.push({
+                        type: 'BAN',
+                        metadata: member.id
+                    })
+                    break
+                case 'MUTE':
+                    await this.muteMember(
+                        member,
+                        moderator,
+                        reason,
+                        parseHumanDate(action.duration ?? '99 years')
+                    )
+                        
+                    moderationAction.subactions.push({
+                        type: 'MUTE',
+                        metadata: 'DURATION: ' + action.duration
+                    })
+                    break
+                default:
+                    break
+                }
+                
+                user.warns = [...(user.warns ?? []), {
+                    date: date,
+                    moderator: moderator.id,
+                    reason: reason,
+                    action: action
+                }]
+            })
+
+            await this.logModerationAction(moderationAction)
+        })
+    }
+
+    getWarnAction(warns: UserData['warns'], levels: UserWarnConfig['levels'], cooldownPeriod: UserWarnConfig['cooldownPeriod']) {
+        if (!levels || levels.length == 0) return undefined
+        if (!warns) return levels[0]
+
+        let previousWarn
+        let warnCount = 0
+        for (const warn of warns) {
+            if (!previousWarn || !cooldownPeriod) {
+                previousWarn = warn
+                warnCount++
+                continue
+            }
+
+            if (warn.date.getTime() - previousWarn.date.getTime() > parseHumanDate(cooldownPeriod)) {
+                previousWarn = warn
+                warnCount--
+                continue
+            } else {
+                previousWarn = warn
+                warnCount++
+                continue
+            }
+        }
+
+        return levels[Math.min(levels.length, warnCount)]
     }
 
     async muteMember(member: GuildMember, moderator: User, reason: string, duration: number) {
@@ -104,6 +190,9 @@ export class ModerationModuleManager extends MutexBasedManager {
                         case ModerationActionType.ROLE_ADD:
                         case ModerationActionType.ROLE_REMOVE:
                             return `<@&${action.metadata}>`
+                        case ModerationActionType.BAN_USER:
+                        case ModerationActionType.UNBAN_USER:
+                            return `<@${action.metadata}>`
                         default:
                             return action.metadata
                         }
