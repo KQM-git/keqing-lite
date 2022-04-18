@@ -5,6 +5,7 @@ import { Document, DocumentDatabase } from '../database/database'
 import { RoleId, UserWarnConfig } from '../models/LiveConfig'
 
 export interface UserData {
+    modMailThread?: string
     notes?: {
         note: string
         moderator: string

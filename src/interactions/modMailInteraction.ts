@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageActionRow, MessageButton } from 'discord.js'
+import { ButtonInteraction, MessageActionRow, MessageButton, ThreadChannel } from 'discord.js'
 import { discordBot } from '..'
 import { Constants } from '../constants'
 import { ModMailModule } from '../models/LiveConfig'
@@ -51,36 +51,49 @@ export default class ModMailInteraction extends MultiButtonOptionInteraction {
                 throw new Error('logging channel is not text based')
             }
 
-            const thread = await threadChannel.threads.create({
-                name: `ModMail by ${interaction.user.username} - ${interaction.user.id}`,
-                invitable: false,
-                autoArchiveDuration: 1440,
-                type: 'GUILD_PRIVATE_THREAD',
-            })
+            let thread: ThreadChannel
+            
+            const userDocument = discordBot.databaseManager.getUserDocument(interaction.user.id)
+            const existingThreadId = await userDocument.get('modMailThread')
+            const existingThread = existingThreadId != undefined ? await threadChannel.threads.fetch(existingThreadId) : undefined
 
-            await thread.members.add(interaction.user.id)
+            if (existingThread != undefined && !existingThread.archived) {
+                thread = existingThread
+            } else {
+                thread = await threadChannel.threads.create({
+                    name: `ModMail by ${interaction.user.username} - ${interaction.user.id}`,
+                    invitable: false,
+                    autoArchiveDuration: 1440,
+                    type: 'GUILD_PRIVATE_THREAD',
+                })
+
+                await userDocument.set('modMailThread', thread.id)
+                
+                await thread.members.add(interaction.user.id)
+                
+                await loggingChannel.send({
+                    content: `You've got Mail, @here! **${interaction.user.username}#${interaction.user.discriminator}** - ${interaction.user.id} opened a thread`,
+                    components: [
+                        new MessageActionRow()
+                            .addComponents(
+                                new MessageButton()
+                                    .setLabel('Show Thread')
+                                    .setStyle('LINK')
+                                    .setURL(`https://discord.com/channels/${Constants.DISCORD_GUILD_ID}/${thread.id}`),
+                                new MessageButton()
+                                    .setLabel('Close Thread')
+                                    .setCustomId(`modMailInteraction#closeThread&${threadChannelId}/${thread.id}`)
+                                    .setStyle('DANGER')
+                            )
+                    ]
+                })
+            }
+
             await thread.send({
-                content: `**User ID**: ${interaction.user.username}#${interaction.user.discriminator} - ${interaction.user.id}\n**Message**:${message.cleanContent}\n**Attachments**:\n${message.attachments.map(x => x.proxyURL).join('\n')}`,
+                content: `**User ID**: ${interaction.user.username}#${interaction.user.discriminator} - ${interaction.user.id}\n**Message**: ${message.cleanContent}\n**Attachments**:\n${message.attachments.map(x => x.proxyURL).join('\n')}`,
                 allowedMentions: {
                     users: []
                 }
-            })
-
-            await loggingChannel.send({
-                content: `You've got Mail, @here! **${interaction.user.username}#${interaction.user.discriminator}** - ${interaction.user.id} opened a thread`,
-                components: [
-                    new MessageActionRow()
-                        .addComponents(
-                            new MessageButton()
-                                .setLabel('Show Thread')
-                                .setStyle('LINK')
-                                .setURL(`https://discord.com/channels/${Constants.DISCORD_GUILD_ID}/${thread.id}`),
-                            new MessageButton()
-                                .setLabel('Close Thread')
-                                .setCustomId(`modMailInteraction#closeThread&${threadChannelId}/${thread.id}`)
-                                .setStyle('DANGER')
-                        )
-                ]
             })
 
             await interaction.editReply(`Successfully opened a private thread with the admins, please use <#${thread.id}> for further communication`)

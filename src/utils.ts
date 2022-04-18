@@ -22,11 +22,12 @@ function substituteTemplateLiterals(str: string, constants: any): any {
         
         try {
             const mathjs = create(all)
+            const mathjsEvaluate = mathjs.evaluate
             mathjs.import({
-                import: function () { return 'Function import is disabled' },
-                createUnit: function () { return 'Function createUnit is disabled' },
-                evaluate: function () { return 'Function evaluate is disabled' },
-                parse: function () { return 'Function parse is disabled' },
+                'import': function () { return 'Function `import` is disabled' },
+                'createUnit': function () { return 'Function `createUnit` is disabled' },
+                'evaluate': function () { return 'Function `evaluate` is disabled' },
+                'parse': function () { return 'Function `parse` is disabled' },
             }, { override: true })
 
             const result = new VM({
@@ -37,7 +38,8 @@ function substituteTemplateLiterals(str: string, constants: any): any {
                 sandbox: {
                     ...constants,
                     ...utilityConstants,
-                    mathjs
+                    mathjs,
+                    mathjsEvaluate
                 }
             }).run(match[1])
 
@@ -82,7 +84,7 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
             'ID': obj.user.id,
             'USERNAME': obj.user.username,
             'TAG': obj.user.discriminator,
-            'AVATAR': obj.user.displayAvatarURL()
+            'AVATAR': obj.user.displayAvatarURL({ size: 4096, format: 'png' })
         }
     }
 

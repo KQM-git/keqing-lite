@@ -39,7 +39,9 @@ class DiscordBotHandler {
             'MESSAGE',
             'CHANNEL',
             'REACTION'
-        ]
+        ],
+        retryLimit: 2,
+        restGlobalRateLimit: 50,
     })
     restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
 
