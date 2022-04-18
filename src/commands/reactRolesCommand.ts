@@ -40,7 +40,6 @@ export default class ReactRolesCommand implements Command {
             return
         }
 
-        const guild = await discordBot.guild
         const configId = interaction.options.getString('config', true)
         const config = this.configs[configId]
         if (!config) {
@@ -51,7 +50,6 @@ export default class ReactRolesCommand implements Command {
             return
         }
 
-        const guild = await discordBot.guild
         const message = await interaction.reply({
             embeds: [{
                 title: config.title ?? 'Reaction Roles',
