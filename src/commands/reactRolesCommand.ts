@@ -40,6 +40,7 @@ export default class ReactRolesCommand implements Command {
             return
         }
 
+        const guild = await discordBot.guild
         const configId = interaction.options.getString('config', true)
         const config = this.configs[configId]
         if (!config) {

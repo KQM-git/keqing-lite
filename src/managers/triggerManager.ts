@@ -98,11 +98,15 @@ export class LiveTriggerManager {
             if (!trigger) continue
 
             if (trigger.channels) {
+                const channelIds: string[] = [message.channelId]
+                if (message.channel.isThread() && message.channel.parentId)
+                    channelIds.push(message.channel.parentId)
+
                 if (trigger.channels?.blacklist) {
-                    if (trigger.channels.blacklist.includes(message.channelId)) continue
+                    if (trigger.channels.blacklist.filter(x => channelIds.includes(x)).length > 0) continue
                 }
                 if (trigger.channels?.whitelist) {
-                    if (!trigger.channels.whitelist.includes(message.channelId)) continue
+                    if (trigger.channels.whitelist.filter(x => channelIds.includes(x)).length == 0) continue
                 }
             }
             

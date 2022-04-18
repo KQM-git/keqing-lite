@@ -18,6 +18,7 @@ export interface Modules {
     reactRoles?: ReactRolesModule
     vanityRoles?: VanityRolesModule
     pointsSystem?: PointsModule
+    moderation?: ModerationModule
 }
 
 interface ModuleConfig {
@@ -25,8 +26,31 @@ interface ModuleConfig {
     permissions?: LiveInteractionPermissions
 }
 
+export interface ModerationModule extends ModuleConfig {
+    loggingChannel?: ChannelId
+
+    muteConfig?: UserMuteConfig
+    warnConfig?: UserWarnConfig
+}
+
+export interface UserWarnConfig {
+    permissions?: LiveInteractionPermissions
+
+    levels?: {
+        action: 'MUTE' | 'BAN' | 'NOTICE'
+        duration?: string
+    }[]
+
+    cooldownPeriod?: string
+}
+
+export interface UserMuteConfig {
+    permissions?: LiveInteractionPermissions
+    muteRole?: RoleId
+}
+
 export interface PointsModule extends ModuleConfig {
-    loggingChannel: ChannelId
+    loggingChannel?: ChannelId
 }
 
 export interface VanityRolesModule extends ModuleConfig {

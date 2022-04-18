@@ -15,4 +15,9 @@ export class MsgPackrSyncAdapter<T> implements SyncDBAdapter<T> {
     write(data: T) {
         writeFileAtomicSync(this.filePath, pack(data))
     }
+
+    delete() {
+        if (!fs.existsSync(this.filePath)) return
+        fs.rmSync(this.filePath)
+    }
 }

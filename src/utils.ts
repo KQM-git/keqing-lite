@@ -201,3 +201,41 @@ export function randomFromList(list: any[]) {
 export function randomNumberBetween(start: number, end: number) {
     return start + Math.round(Math.random() * (end - start))
 }
+
+export function sleep(ms: number) {
+    return new Promise(res => setTimeout(res, ms))
+}
+
+export async function invokeRepeatedly(func: () => Promise<void> | void, interval: number, invocations = Infinity): Promise<void> {
+    for (let i = 0; i < invocations; i++) {
+        await func()
+        await sleep(interval)
+    }
+}
+
+export function parseHumanDate(str: string) {
+    const matches = str.matchAll(/(\d+)\s?([A-z]+)/gi)
+    let time = 0
+    for (const match of matches) {
+        match.shift()
+        time += parseFloat(match[0]) * (parseDateComponent(match[1]) ?? 0)
+    }
+    return time
+}
+
+function parseDateComponent(str: string) {
+    switch (str.toLowerCase()) {
+    case 'y': case 'year': case 'years': case 'yr': case 'yrs':
+        return 3.156e+10
+    case 'min': case 'mins': case 'minute': case 'minutes':
+        return 6e+4
+    case 'd': case 'day': case 'days':
+        return 8.64e+7
+    case 'h': case 'hr': case 'hrs': case 'hour': case 'hours':
+        return 3.6e+6
+    case 'month': case 'months':
+        return 2.628e+9
+    default:
+        return undefined
+    }
+}
