@@ -134,8 +134,8 @@ export class ModerationModuleManager extends MutexBasedManager {
         })
 
         this.queueModerationAction(`${member.id}_UNMUTE`, {
-            executionTime: muteTime,
-            queueTime: new Date(muteTime.getTime() + duration),
+            executionTime: new Date(muteTime.getTime() + duration),
+            queueTime: muteTime,
             moderator: moderator.id,
             reason: reason,
             subactions: [{
