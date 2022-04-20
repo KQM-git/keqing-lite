@@ -1,5 +1,5 @@
 import { stripIndent } from 'common-tags'
-import { GuildMember, User } from 'discord.js'
+import { GuildMember, Message, User } from 'discord.js'
 import { discordBot } from '..'
 import { UserWarnConfig } from '../models/LiveConfig'
 import { parseHumanDate } from '../utils'
@@ -41,6 +41,7 @@ export class ModerationModuleManager extends MutexBasedManager {
             subactions: [],
             target: member.id
         }
+        const guild = await discordBot.guild
 
         await document.modifyValue(async user => {
             const action = this.getWarnAction(user.warns, this.moduleConfig?.warnConfig?.levels, this.moduleConfig?.warnConfig?.cooldownPeriod)
@@ -83,6 +84,12 @@ export class ModerationModuleManager extends MutexBasedManager {
         })
 
         await this.logModerationAction(moderationAction)
+
+        try {
+            await member.send(`You've been warned in **${guild.name}**. **Reason**: ${reason}. **Moderator**: <@${moderator.id}>`)
+        } catch {
+            throw new Error('Unable to DM the user.')
+        }
     }
 
     getWarnAction(warns: UserData['warns'], levels: UserWarnConfig['levels'], cooldownPeriod: UserWarnConfig['cooldownPeriod']) {
@@ -210,5 +217,55 @@ export class ModerationModuleManager extends MutexBasedManager {
 
     generateUniqueName() {
         return Date.now() + '_' + (Math.random() * 10000).toFixed(0)
+    }
+
+    async parseMessage(message: Message) {
+        if (!this.moduleConfig?.enabled) return
+        if (!message.member || message.author.bot) return
+
+        const guild = await discordBot.guild
+        const date = new Date()
+        const content = message.content
+        for (const censor of this.moduleConfig.wordCensorConfig?.matches ?? []) {
+            const regex = new RegExp(censor.regex, (censor.flags ?? '') + 'g')
+            const match = regex.exec(content)
+            if (!match) continue
+
+            await message.delete()
+            
+            await this.logModerationAction({
+                executionTime: date,
+                queueTime: date,
+                moderator: guild.client.user?.id ?? '',
+                reason: `Bad word usage: \`${match[0]}\``,
+                subactions: censor.warn ? [{
+                    type: 'WARN',
+                    metadata: ''
+                }] : [],
+                target: message.member.id
+            })
+
+            if (censor.warn && guild.client.user) {
+                try {
+                    await this.warnMember(message.member, guild.client.user, `Bad word usage: \`${match[0]}\``)
+                } catch {
+                    const notice = await message.channel.send({
+                        content: 'User warned and message was deleted due to bad word usage.'
+                    })
+
+                    setTimeout(() => notice.delete(), 30_000)
+                }
+            } else {
+                try {
+                    await message.member.send(`Message deleted due to bad word usage: \`${match[0]}\``)
+                } catch {
+                    const notice = await message.channel.send({
+                        content: 'Message was deleted due to bad word usage.'
+                    })
+
+                    setTimeout(() => notice.delete(), 30_000)
+                }
+            }
+        }
     }
 }

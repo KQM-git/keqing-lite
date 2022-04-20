@@ -31,6 +31,15 @@ export interface ModerationModule extends ModuleConfig {
 
     muteConfig?: UserMuteConfig
     warnConfig?: UserWarnConfig
+    wordCensorConfig?: WordCensorConfig
+}
+
+export interface WordCensorConfig {
+    matches?: {
+        regex: string
+        flags?: string
+        warn?: boolean
+    }[]
 }
 
 export interface UserWarnConfig {

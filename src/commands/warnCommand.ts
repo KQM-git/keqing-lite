@@ -44,16 +44,18 @@ export default class WarnCommand implements Command {
         }
         
         const reason = interaction.options.getString('reason', true)
-        const guild = await discordBot.guild
+        
+        try {
+            await discordBot.moderationManager.warnMember(
+                user as GuildMember,
+                interaction.user,
+                reason
+            )
 
-        await discordBot.moderationManager.warnMember(
-            user as GuildMember,
-            interaction.user,
-            reason
-        )
-
-        await interaction.editReply(`Warned ${user}. **Reason**: ${reason}`)
-        await user.send(`You've been warned in **${guild.name}**. **Reason**: ${reason}. **Moderator**: <@${interaction.user.id}>`)
+            await interaction.editReply(`Warned ${user}. **Reason**: ${reason}`)
+        } catch(error: any) {
+            await interaction.editReply(error.message ?? error)
+        }
     }
 
 }
