@@ -1,5 +1,6 @@
+
 import { stripIndent } from 'common-tags'
-import { GuildMember, Message, User } from 'discord.js'
+import { GuildMember, Message, MessageOptions, User } from 'discord.js'
 import { discordBot } from '..'
 import { UserWarnConfig } from '../models/LiveConfig'
 import { parseHumanDate } from '../utils'
@@ -15,12 +16,12 @@ export class ModerationModuleManager extends MutexBasedManager {
         super()
 
         // Tick every minute
-        setInterval(() => this.processTasks(), 30_000)
+        setInterval(async () => await this.processTasks(), 30_000)
     }
 
     async processTasks() {
         await this.getMutex(this.DEFAULT_MUTEX_ID).runExclusive(async () => {
-            const actionQueue = discordBot.databaseManager.getAllQueuedModerationActions(0, Infinity)
+            const actionQueue = this.getAllQueuedModerationActions()
             for (const [, document] of Object.entries(actionQueue)) {
                 await document.modifyValue(async action => {
                     await this.handleModerationAction(action)
@@ -28,6 +29,15 @@ export class ModerationModuleManager extends MutexBasedManager {
                 await document.deleteDocument()
             }
         })
+    }
+
+    getAllQueuedModerationActions() {
+        return discordBot.databaseManager.getAllQueuedModerationActions(0, Infinity)
+    }
+
+    async getWarnsForUser(userId: string) {
+        const userDocument = discordBot.databaseManager.getUserDocument(userId)
+        return await userDocument.get('warns')
     }
 
     async warnMember(member: GuildMember, moderator: User, reason: string) {
@@ -175,36 +185,40 @@ export class ModerationModuleManager extends MutexBasedManager {
 
     async logModerationAction(action: ModerationAction) {
         if (!this.moduleConfig?.loggingChannel) return
-        
-        await discordBot.sendToChannel(this.moduleConfig.loggingChannel, {
-            embeds: [{
-                title: 'Moderation Action',
-                description: stripIndent`
-                Queue Time: <t:${(action.queueTime.getTime()/1000).toFixed(0)}>
-                Exec Time: <t:${(action.executionTime.getTime()/1000).toFixed(0)}>
-                Reason: ${action.reason}
-                Moderator: <@${action.moderator}>
-                Target: <@${action.target}>
-                `,
-                fields: action.subactions.map(action => ({
-                    name: 'Action',
-                    value: stripIndent`
-                    Type: ${action.type}
-                    Metadata: ${(() => {
-                        switch (action.type) {
-                        case ModerationActionType.ROLE_ADD:
-                        case ModerationActionType.ROLE_REMOVE:
-                            return `<@&${action.metadata}>`
-                        case ModerationActionType.BAN_USER:
-                        case ModerationActionType.UNBAN_USER:
-                            return `<@${action.metadata}>`
-                        default:
-                            return action.metadata
-                        }
-                    })()}`
-                }))
-            }]
-        })
+        await discordBot.sendToChannel(
+            this.moduleConfig.loggingChannel,
+            { embeds: [this.getEmbedForModerationAction(action)] }
+        )
+    }
+
+    getEmbedForModerationAction(action: ModerationAction) : NonNullable<MessageOptions['embeds']>[0] {
+        return {
+            title: 'Moderation Action',
+            description: stripIndent`
+            Queue Time: <t:${(action.queueTime.getTime()/1000).toFixed(0)}>
+            Exec Time: <t:${(action.executionTime.getTime()/1000).toFixed(0)}>
+            Reason: ${action.reason}
+            Moderator: <@${action.moderator}>
+            Target: <@${action.target}>
+            `,
+            fields: action.subactions.map(action => ({
+                name: 'Action',
+                value: stripIndent`
+                Type: ${action.type}
+                Metadata: ${(() => {
+                    switch (action.type) {
+                    case ModerationActionType.ROLE_ADD:
+                    case ModerationActionType.ROLE_REMOVE:
+                        return `<@&${action.metadata}>`
+                    case ModerationActionType.BAN_USER:
+                    case ModerationActionType.UNBAN_USER:
+                        return `<@${action.metadata}>`
+                    default:
+                        return action.metadata
+                    }
+                })()}`
+            }))
+        }
     }
 
     async queueModerationAction(name: string, action: ModerationAction) {

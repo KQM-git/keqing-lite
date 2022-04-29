@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import path from 'path'
 import { MsgPackrSyncAdapter } from './msgpackrSyncAdapter'
@@ -12,12 +13,12 @@ export class DocumentDatabase {
         fs.mkdirSync(databaseFolder)
     }
     
-    getCollection<T>(name: string): DocumentCollection<T> {
+    getCollection<T extends object>(name: string): DocumentCollection<T> {
         return new DocumentCollection(path.join(this.databaseFolder, name))
     }
 }
 
-export class DocumentCollection<T> {
+export class DocumentCollection<T extends object> {
     documents: Collection<string, Document<T>> = new Collection()
 
     constructor(private folderPath: string) {
@@ -56,7 +57,7 @@ export class DocumentCollection<T> {
     }
 }
 
-export class Document<T> {
+export class Document<T extends object> {
     private adapter: SyncDBAdapter<T>
     private db: SyncDB<T>
     private _mutex = new Mutex()
@@ -109,5 +110,28 @@ export class Document<T> {
             if (this.isDeleted) return
             this.db.write()
         })
+    }
+
+    readOnlyValue() {
+        return this.getProxy(this.db.data)
+    }
+
+    private getProxy<T extends object>(obj: T): T {
+        if (obj == undefined) {
+            return obj
+        } else if (Array.isArray(obj)) {
+            // @ts-ignore
+            return obj.map(v => this.getProxy(v))
+        } else if (typeof obj == 'object') {
+            return new Proxy<T>(obj, {
+                get: (target, name) => {
+                    // @ts-ignore
+                    const value = target?.[name]
+                    return this.getProxy(value)
+                }
+            })
+        }
+    
+        return obj
     }
 }
