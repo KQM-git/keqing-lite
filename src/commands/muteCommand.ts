@@ -62,7 +62,7 @@ export default class MuteCommand implements Command {
             duration
         )
 
-        await interaction.editReply(`Muted ${user} for ${duration}ms (until <t:${currentDate.getTime() + duration}>). Reason: *${reason}*`)
+        await interaction.editReply(`Muted ${user} for ${duration}ms (until <t:${((currentDate.getTime() + duration)/1000).toFixed(0)}>). Reason: *${reason}*`)
     }
 
 }
