@@ -23,9 +23,7 @@ export class ModerationModuleManager extends MutexBasedManager {
         await this.getMutex(this.DEFAULT_MUTEX_ID).runExclusive(async () => {
             const actionQueue = this.getAllQueuedModerationActions()
             for (const [, document] of Object.entries(actionQueue)) {
-                await document.modifyValue(async action => {
-                    await this.handleModerationAction(action)
-                })
+                await this.handleModerationAction(document.readOnlyValue())
                 await document.deleteDocument()
             }
         })
@@ -180,7 +178,7 @@ export class ModerationModuleManager extends MutexBasedManager {
             }
         }
 
-        this.logModerationAction(action)
+        await this.logModerationAction(action)
     }
 
     async logModerationAction(action: ModerationAction) {

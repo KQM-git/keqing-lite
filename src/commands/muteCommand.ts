@@ -54,6 +54,7 @@ export default class MuteCommand implements Command {
 
         const guild = await discordBot.guild
 
+        const currentDate = new Date()
         await discordBot.moderationManager.muteMember(
             user as GuildMember,
             interaction.user,
@@ -61,7 +62,7 @@ export default class MuteCommand implements Command {
             duration
         )
 
-        await interaction.editReply(`Muted ${user} for ${duration}. Reason: *${reason}*`)
+        await interaction.editReply(`Muted ${user} for ${duration}ms (until <t:${currentDate.getTime() + duration}>). Reason: *${reason}*`)
     }
 
 }
