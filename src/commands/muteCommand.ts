@@ -33,6 +33,7 @@ export default class MuteCommand implements Command {
                 .setDescription('the reason for the mute')
                 .setRequired(true)
             )
+            .setDefaultPermission(this.moduleConfig?.enabled == true && this.moduleConfig.muteConfig?.muteRole != undefined)
             .toJSON()
     }
 

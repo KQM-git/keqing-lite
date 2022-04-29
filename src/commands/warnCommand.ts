@@ -28,6 +28,7 @@ export default class WarnCommand implements Command {
                 .setDescription('the reason for the warn')
                 .setRequired(true)
             )
+            .setDefaultPermission(this.moduleConfig?.enabled == true && (this.moduleConfig.warnConfig?.levels?.length ?? 0) > 0)
             .toJSON()
     }
 
