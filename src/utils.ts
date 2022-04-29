@@ -15,9 +15,9 @@ const utilityConstants = {
 }
 
 function substituteTemplateLiterals(str: string, constants: any): any {
-    let templateRegex2 = /\$\{([\s\S]*?)\}/g
+    let templateRegex = /(?:\$\{([\s\S]*?)\}|<\$js([\s\S]*?)\$>)/g
     let match
-    while ((match = templateRegex2.exec(str)) != undefined) {
+    while ((match = templateRegex.exec(str)) != undefined) {
         if (match.length <= 1) continue
         
         try {
@@ -44,13 +44,13 @@ function substituteTemplateLiterals(str: string, constants: any): any {
             }).run(match[1])
 
             const start = str.slice(0, match.index)
-            const end = str.slice(templateRegex2.lastIndex)
+            const end = str.slice(templateRegex.lastIndex)
             if(start.length > 0 || end.length > 0)
-                str = str.slice(0, match.index) + result + str.slice(templateRegex2.lastIndex)
+                str = str.slice(0, match.index) + result + str.slice(templateRegex.lastIndex)
             else 
                 return result
 
-            templateRegex2 = /\$\{([\s\S]*?)\}/g
+            templateRegex = /(?:\$\{([\s\S]*?)\}|<\$js([\s\S]*?)\$>)/g
         } catch(error: any) {
             throw new Error(`Error while evaluating JS:${match.index} \n${error.message}\n${error.stack}`)
         }
