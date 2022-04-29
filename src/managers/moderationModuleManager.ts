@@ -162,7 +162,7 @@ export class ModerationModuleManager extends MutexBasedManager {
     }
 
     async handleModerationAction(action: ModerationAction) {
-        if (new Date() < action.executionTime) return
+        if (Date.now() < action.executionTime.getTime()) return
 
         const guild = await discordBot.guild
         const target = await guild.members.fetch(action.target)
