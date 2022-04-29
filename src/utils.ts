@@ -41,7 +41,7 @@ function substituteTemplateLiterals(str: string, constants: any): any {
                     mathjs,
                     mathjsEvaluate
                 }
-            }).run(match[1])
+            }).run(match[1] ?? match[2])
 
             const start = str.slice(0, match.index)
             const end = str.slice(templateRegex.lastIndex)
