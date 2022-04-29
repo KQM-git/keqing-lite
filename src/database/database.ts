@@ -117,7 +117,7 @@ export class Document<T extends object> {
     }
 
     private getProxy<T extends object>(obj: T): T {
-        if (obj == undefined) {
+        if (obj == undefined || obj instanceof Date || obj instanceof Proxy) {
             return obj
         } else if (Array.isArray(obj)) {
             // @ts-ignore
