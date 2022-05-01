@@ -92,6 +92,24 @@ class DiscordBotHandler {
                 console.log('Ready!')
             })
 
+            this.client.on('threadUpdate', async (oldThread, newThread) => {
+                if (oldThread.partial) { oldThread = await oldThread.fetch() }
+                if (newThread.parent) { newThread = await newThread.fetch() }
+
+                const autoArchiveDuration: string | number | null = oldThread.autoArchiveDuration
+                if (typeof autoArchiveDuration === 'string' || !autoArchiveDuration) { return }
+                
+                if (oldThread.archived || autoArchiveDuration > 144 || oldThread.type == 'GUILD_PRIVATE_THREAD') { return }
+                if (!newThread.archived) { return }
+
+                try {
+                    const starterMessage = await newThread.fetchStarterMessage()
+                    await starterMessage.delete()
+                } catch (error) {
+                    console.log(error)
+                }
+            })
+
             this.client.on('guildMemberRemove', async (member) => {
                 try {
                     if (member.partial) {
