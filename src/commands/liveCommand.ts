@@ -67,7 +67,7 @@ export default class LiveCommand implements Command {
         }
 
         try {
-            new MessageLiveInteraction(liveInteraction)
+            await new MessageLiveInteraction(liveInteraction)
                 .replyToInteraction(interaction)
         } catch(error) {
             console.log(error)
