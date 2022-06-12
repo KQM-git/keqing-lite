@@ -1,7 +1,5 @@
 import { CommandInteraction, CacheType, MessageEmbed } from 'discord.js'
 import { Command } from './command'
-import { stripIndent } from 'common-tags'
-import { discordBot } from '..'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
 import { SlashCommandBuilder } from '@discordjs/builders'
 
@@ -30,7 +28,11 @@ export default class ServerInfoCommand implements Command {
     async execute(interaction: CommandInteraction<CacheType>): Promise<void> {
         await interaction.deferReply()
 
-        const guild = await discordBot.guild
+        const guild = interaction.guild
+        if (!guild) {
+            await interaction.editReply('Guild not found.')
+            return
+        }
 
         const roles = guild.roles.cache
             .sort((a, b) => b.position - a.position)

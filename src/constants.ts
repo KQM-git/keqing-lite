@@ -6,10 +6,6 @@ class _Constants {
         dotenv.config()
     }
 
-    get BOT_INTERNAL_LOG_CHANNEL(): string {
-        return this.fromEnvConfig('BOT_INTERNAL_LOG_CHANNEL')
-    }
-
     get DISCORD_BOT_TOKEN(): string {
         return this.fromEnvConfig('DISCORD_BOT_TOKEN')
     }
@@ -22,32 +18,12 @@ class _Constants {
         return this.fromEnvConfig('LIVE_COMMANDS_REPO')
     }
     
-    get DISCORD_DEV_GUILD_ID(): string {
-        return this.fromEnvConfig('DISCORD_DEV_GUILD_ID')
-    }
-    
-    get DISCORD_GUILD_ID(): string {
-        return this.fromEnvConfig('DISCORD_GUILD_ID')
-    }
-    
     get LIVE_COMMANDS_REPO_BASE_FOLDER_NAME(): string {
         return this.fromEnvConfig('LIVE_COMMANDS_REPO_BASE_FOLDER_NAME')
     }
 
     get LIVE_COMMANDS_REPO_EXTRACT_DIR(): string {
         return path.join(__dirname, 'liveCommandsRepo')
-    }
-
-    get DEV_MODE(): boolean {
-        return this.fromEnvConfig('DEV_MODE') == 1
-    }
-
-    get SUPPORT_CHANNEL_ID(): string {
-        return this.fromEnvConfig('SUPPORT_CHANNEL_ID')
-    }
-
-    get MEMBER_ROLE_ID(): string {
-        return this.fromEnvConfig('MEMBER_ROLE_ID')
     }
 
     fromEnvConfig(key: string): any {

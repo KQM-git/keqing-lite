@@ -18,20 +18,13 @@ import { ChannelId, LiveConfig } from './models/LiveConfig'
 import { MessageLiveInteraction } from './models/MessageLiveInteraction'
 import { LiveTriggerManager } from './managers/triggerManager'
 import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
-import { ModMailManager } from './managers/modMailManager'
-import { ReactRolesManager } from './managers/reactRolesManager'
-import { VanityRolesManager } from './managers/vanityRolesManager'
-import { DatabaseManager } from './managers/databaseManager'
-import { PointsManager } from './managers/pointsManager'
 import { ActivityTypes } from 'discord.js/typings/enums'
-import { ModerationModuleManager } from './managers/moderationModuleManager'
 
 class DiscordBotHandler {
     client = new Client({
         intents: [
             Intents.FLAGS.GUILDS,
             Intents.FLAGS.GUILD_MESSAGES,
-            Intents.FLAGS.GUILD_MEMBERS,
             Intents.FLAGS.DIRECT_MESSAGES,
             Intents.FLAGS.GUILD_MESSAGE_REACTIONS
         ],
@@ -45,36 +38,12 @@ class DiscordBotHandler {
     })
     restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
 
-    get guild(): Promise<Guild> {
-        return (async () => {
-            let guild: Guild | undefined
-
-            if (this.client.guilds.cache.has(Constants.DISCORD_GUILD_ID))
-                guild = this.client.guilds.cache.get(Constants.DISCORD_GUILD_ID)
-            else
-                guild = await this.client.guilds.fetch(Constants.DISCORD_GUILD_ID)
-            
-            if (!guild) {
-                throw new Error(`Unable to resolve guild ${Constants.DISCORD_GUILD_ID}`)
-            }
-
-            return guild
-        })()
-    }
-
-
     localCommandManager = new LocalCommandManager()
     liveCommandManager = new LiveCommandManager()
 
     localInteractionManager = new LocalInteractionManager()
     liveInteractionManager = new LiveInteractionManager()
     liveTriggerManager = new LiveTriggerManager()
-    modMailManager = new ModMailManager()
-    reactRolesManager = new ReactRolesManager()
-    vanityRolesManager = new VanityRolesManager()
-    databaseManager = new DatabaseManager()
-    pointsManager = new PointsManager()
-    moderationManager = new ModerationModuleManager()
 
     liveConstants: any | undefined = {}
     liveConfig: LiveConfig = {}
@@ -110,74 +79,10 @@ class DiscordBotHandler {
                 }
             })
 
-            this.client.on('guildMemberRemove', async (member) => {
-                try {
-                    if (member.partial) {
-                        member = await member.fetch()
-                    }
-                    
-                    await this.vanityRolesManager.memberUpdated(member)
-                } catch (err) {
-                    this.logInternalError(err)
-                }
-            })
-
-            this.client.on('guildMemberUpdate', async (_, member) => {
-                try {
-                    if (member.partial) {
-                        member = await member.fetch()
-                    }
-                    
-                    await this.vanityRolesManager.memberUpdated(member)
-                } catch (err) {
-                    this.logInternalError(err)
-                }
-            })
-
-            this.client.on('guildMemberAvailable', async (member) => {
-                try {
-                    if (member.partial) {
-                        member = await member.fetch()
-                    }
-                    
-                    await this.vanityRolesManager.memberUpdated(member)
-                } catch (err) {
-                    this.logInternalError(err)
-                }
-            })
-
-            this.client.on('guildMemberAdd', async (member) => {
-                const welcomeChannelId = this.liveConfig.modules?.verification?.welcomeChannel
-                if (welcomeChannelId) {
-                    const channel = this.client.channels.cache.get(welcomeChannelId)
-                    if (channel && channel.isText())
-                        await this.sendWelcomeMessage(channel, member)
-                }
-            })
-
-            this.client.on('messageReactionAdd', async (reaction, user) => {
-                try {
-                    console.log('message reaction add')
-                    await this.reactRolesManager.handleReaction(reaction, user)
-                } catch (err) {
-                    this.logInternalError(err, reaction.message)
-                }
-            })
-
             this.client.on('messageCreate', async message => {
                 try {
                     console.log('messageCreate')
-                    await this.moderationManager.parseMessage(message)
-                    await this.modMailManager.handleMessage(message)
                     await this.liveTriggerManager.parseMessage(message)
-                    
-                    if (!message.channel.isThread()) { return }
-                    if (message.member?.user.bot) { return }
-                    if (message.channel.autoArchiveDuration != 60) { return }
-                    if (Constants.SUPPORT_CHANNEL_ID != message.channel.parentId) { return }
-                    
-                    await message.channel.send({ content: 'Setting archive duration to **24** hours due to activity' })
-                    await message.channel.setAutoArchiveDuration(1440)
                 } catch (err) {
                     this.logInternalError(err, message)
                 }
@@ -247,7 +152,7 @@ class DiscordBotHandler {
     }
 
     async loadActivity() {
-        const activity = await this.databaseManager.getBotSettingsDocument().get('activity')
+        const activity = this.liveConfig.activityStatus
         if (!activity) return
 
         this.setActivity(activity.message, activity.type)
@@ -258,29 +163,10 @@ class DiscordBotHandler {
             name: message,
             type: type as number
         })
-
-        await this.databaseManager.getBotSettingsDocument().set('activity', { message, type: type })
     }
 
-    async removeActivity() {
-        await this.client.user?.setActivity(undefined)
-        await this.databaseManager.getBotSettingsDocument().set('activity', undefined)
-    }
-
-    async logInternalError(error: any, message: {url?: string} | undefined = undefined) {
+    logInternalError(error: any, message: {url?: string} | undefined = undefined) {
         console.log(error)
-
-        const channelId = Constants.BOT_INTERNAL_LOG_CHANNEL
-        if (!channelId) return
-        
-        let channel: AnyChannel | null | undefined = this.client.channels.cache.get(channelId)
-        if (!channel) {
-            channel = await this.client.channels.fetch(channelId)
-        }
-
-        if (!channel?.isText()) return
-
-        await channel.send(`**INTERNAL UNHANDLED ERROR**${message?.url == undefined ? '' : '\nMESSAGE:' + message?.url}\n${error}`)
     }
 
     async loadCommands() {
@@ -361,11 +247,7 @@ class DiscordBotHandler {
             console.log(`Registering Command: ${command.name}, AC ${command.autocomplete ?? false}`)
         }
 
-        if (Constants.DEV_MODE) {
-            await this.restClient.put(Routes.applicationGuildCommands(Constants.DISCORD_CLIENT_ID, Constants.DISCORD_DEV_GUILD_ID), { body: Object.values(hashSet) })
-        } else {
-            await this.restClient.put(Routes.applicationGuildCommands(Constants.DISCORD_CLIENT_ID, Constants.DISCORD_GUILD_ID), { body: Object.values(hashSet) })
-        }
+        await this.restClient.put(Routes.applicationCommands(Constants.DISCORD_CLIENT_ID), { body: Object.values(hashSet) })
     }
 
     async downloadAndExtractLiveCommandRepo() {
@@ -422,52 +304,6 @@ class DiscordBotHandler {
 
             request.end()
         })
-    }
-
-    private async sendWelcomeMessage(channel: TextBasedChannel, member: GuildMember) {
-        if (!discordBot.liveConfig.modules?.verification?.enabled) return
-
-        const liveInteractionId = discordBot.liveConfig.modules?.verification?.interactions?.initialMessageInteractionPath
-        if (!liveInteractionId) {
-            await channel.send('**ERROR:** `interactions.initial_message` not set')
-            return
-        }
-        
-        const liveInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(
-            liveInteractionId,
-            constantsFromObject(member)
-        )
-        if (!liveInteraction) {
-            await channel.send('**ERROR:** Unable to parse live interaction for id ' + liveInteractionId)
-            return
-        }
-
-        const message = new MessageLiveInteraction(liveInteraction)
-        await channel.send(message.toMessage({
-            components: [
-                new MessageActionRow()
-                    .addComponents(
-                        new MessageButton()
-                            .setCustomId('verificationInteraction')
-                            .setLabel(discordBot.liveConfig.modules?.verification?.button?.title ?? 'Verify')
-                            .setStyle(discordBot.liveConfig.modules?.verification?.button?.type ?? 'PRIMARY'),
-                    )
-                    
-            ]
-        }))
-    }
-
-    async sendToChannel(channelId: ChannelId, message: MessageOptions) {
-        const guild = await discordBot.guild
-
-        let channel = guild.channels.cache.get(channelId)
-        if (!channel) channel = await guild.channels.fetch(channelId) ?? undefined
-        
-        if (!channel || !channel.isText()) {
-            throw new Error('Channel is not TextBased')
-        }
-
-        await channel.send(message)
     }
 }
 
