@@ -20,18 +20,16 @@ export default class BotInfoCommand implements Command {
         const embed = new MessageEmbed()
             .setDescription('**Bot Info**')
             .setColor('PURPLE')
-            .setThumbnail(discordBot.client.user?.avatarURL({size: 1024}) ?? '')
-            .addField('General', stripIndent`
-                **Developed By:** Paper (@Paper#1932)
-                **Hosted By:** [Keqing Mains](https://discord.gg/keqing)
+            .setThumbnail(discordBot.client.user?.avatarURL({ size: 1024 }) ?? '')
+            
+            .addField('Developer', 'Paper (@Paper#1932)', true)
+            .addField('Owner', '[Keqing Mains](https://discord.gg/keqing)', true)
+            .addField('Source', '[GitHub](https://github.com/KQMBot/keqing-lite)', true)
 
-                **Source:** [GitHub](https://github.com/KQMBot/keqing-lite)
-            `)
-            .addField('Statistics', stripIndent`
-                **Total Servers:** ${discordBot.client.guilds.cache.size}
-                **Latency:** ${Date.now() - interaction.createdTimestamp}ms
-                **API Latency:** ${Math.round(discordBot.client.ws.ping)}ms
-            `)
+            .addField('Server Count', `${discordBot.client.guilds.cache.size}`, true)
+            .addField('Latency', `${Date.now() - interaction.createdTimestamp}ms`, true)
+            .addField('API Latency', `${Math.round(discordBot.client.ws.ping)}ms`, true)
+        
             .addField('Bot Admins', Constants.BOT_ADMINS.map(x => `<@${x}>`).join(' '))
             .setFooter({
                 text: `Requested by ${interaction.user.username}`
