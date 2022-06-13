@@ -6,6 +6,10 @@ class _Constants {
         dotenv.config()
     }
 
+    get BOT_ADMINS(): string[] {
+        return this.fromEnvConfig('BOT_ADMINS').split(' ')
+    }
+
     get DISCORD_BOT_TOKEN(): string {
         return this.fromEnvConfig('DISCORD_BOT_TOKEN')
     }
@@ -26,7 +30,7 @@ class _Constants {
         return path.join(__dirname, 'liveCommandsRepo')
     }
 
-    fromEnvConfig(key: string): any {
+    fromEnvConfig(key: string): string {
         const value = process.env[key]
         if(value !== undefined) return value
 

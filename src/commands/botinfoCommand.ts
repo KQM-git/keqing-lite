@@ -32,6 +32,7 @@ export default class BotInfoCommand implements Command {
                 **Latency:** ${Date.now() - interaction.createdTimestamp}ms
                 **API Latency:** ${Math.round(discordBot.client.ws.ping)}ms
             `)
+            .addField('Bot Admins', Constants.BOT_ADMINS.map(x => `<@${x}>`).join(' '))
             .setFooter({
                 text: `Requested by ${interaction.user.username}`
             })

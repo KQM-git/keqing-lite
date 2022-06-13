@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
 import { CommandInteraction } from 'discord.js'
 import { discordBot } from '..'
+import { Constants } from '../constants'
 import { Command } from './command'
 
 export default class ReloadCommandsCommand implements Command {
@@ -11,9 +12,10 @@ export default class ReloadCommandsCommand implements Command {
             .setDescription('Reloads all the commands')
             .toJSON()
     }
+
     async execute(interaction: CommandInteraction): Promise<void> {
-        if (!interaction.memberPermissions?.has('MANAGE_ROLES')) {
-            await interaction.reply({content: 'Unauthorized to use this command', ephemeral: true})
+        if (!Constants.BOT_ADMINS.includes(interaction.member?.user.id ?? '')) {
+            await interaction.reply({content: 'Only Bot Admins may use this command', ephemeral: true})
             return
         }
         
