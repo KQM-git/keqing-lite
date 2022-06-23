@@ -142,7 +142,6 @@ class DiscordBotHandler {
             // Login to Discord with your client's token
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
 
-            await this.loadActivity()
         } catch (error: any) {
             console.log('interal error')
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
@@ -155,7 +154,7 @@ class DiscordBotHandler {
         const activity = this.liveConfig.activityStatus
         if (!activity) return
 
-        this.setActivity(activity.message, activity.type)
+        await this.setActivity(activity.message, activity.type)
     }
 
     async setActivity(message: string, type: ExcludeEnum<typeof ActivityTypes, 'CUSTOM'>) {
@@ -171,8 +170,11 @@ class DiscordBotHandler {
 
     async loadCommands() {
         await this.downloadAndExtractLiveCommandRepo()
+        
         this.loadConstants()
         this.loadConfig()
+        
+        await this.loadActivity()
 
         this.liveTriggerManager.loadTriggers()
 
