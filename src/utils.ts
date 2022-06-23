@@ -5,6 +5,7 @@ import { LiveInteraction, LiveInteractionPermissions } from './managers/liveComm
 import { NodeVM, VM } from 'vm2'
 import yaml from 'js-yaml'
 import { create, all} from 'mathjs'
+import { Constants } from './constants'
 
 const utilityConstants = {
     getValuesRecursive,
@@ -106,9 +107,19 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
     return constants
 }
 
+export function isBotAdmin(member: GuildMember | null) {
+    if (!member) return false
+    return Constants.BOT_ADMINS.includes(member.user.id)
+}
+
 export function hasPermission(permissions: LiveInteractionPermissions | undefined, member: GuildMember | null | undefined, fallbackRolePermission: PermissionResolvable | undefined = undefined) {
     if (!member) {
         return false
+    }
+    
+    // If the person executing this is a bot admin, give them permission even if they dont have it
+    if (isBotAdmin(member)) {
+        return true
     }
 
     if (!permissions) {

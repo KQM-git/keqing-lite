@@ -1,8 +1,9 @@
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
-import { CommandInteraction } from 'discord.js'
+import { CommandInteraction, GuildMember } from 'discord.js'
 import { discordBot } from '..'
 import { Constants } from '../constants'
+import { isBotAdmin } from '../utils'
 import { Command } from './command'
 
 export default class ReloadCommandsCommand implements Command {
@@ -14,7 +15,7 @@ export default class ReloadCommandsCommand implements Command {
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
-        if (!Constants.BOT_ADMINS.includes(interaction.member?.user.id ?? '')) {
+        if (!isBotAdmin(interaction.member as GuildMember)) {
             await interaction.reply({content: 'Only Bot Admins may use this command', ephemeral: true})
             return
         }
