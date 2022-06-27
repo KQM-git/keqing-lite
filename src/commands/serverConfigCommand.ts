@@ -1,12 +1,11 @@
-import {AutocompleteInteraction, CacheType, CommandInteraction, MessageAttachment} from 'discord.js'
+import {AutocompleteInteraction, CommandInteraction, MessageAttachment} from 'discord.js'
 import {Command, IAutocompletableCommand} from './command'
 import {RESTPostAPIApplicationCommandsJSONBody} from 'discord-api-types'
 import {SlashCommandBuilder} from '@discordjs/builders'
 import {SlashCommandAutocompleteStringOption} from './liveInteractionCommand'
 import { discordBot } from '..'
-import { DefaultGuildConfig, GuildConfig, GuildConfigMetadata, GuildConfigMetadataKeyData } from '../managers/databaseManager'
+import { GuildConfig, GuildConfigMetadata } from '../managers/databaseManager'
 import { stripIndent } from 'common-tags'
-import { hasPermission } from '../utils'
 
 export default class ServerConfigCommand implements Command, IAutocompletableCommand {
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {

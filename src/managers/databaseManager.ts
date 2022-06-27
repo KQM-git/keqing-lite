@@ -8,10 +8,6 @@ export interface GuildConfigMetadataKeyData {
     options?: { name: string, value: string }[]
 }
 
-export const DefaultGuildConfig: GuildConfig = {
-    triggerPrefix: 'k!'
-}
-
 export const GuildConfigMetadata: Record<keyof GuildConfig, GuildConfigMetadataKeyData> = {
     triggerPrefix: {
         description: 'The trigger prefix for this server',
@@ -36,12 +32,16 @@ export interface GuildConfig {
     blacklistReply?: string
 }
 
+const DefaultGuildConfig: () => GuildConfig = () => ({
+    triggerPrefix: 'k!'
+})
+
 export class DatabaseManager {
     database = new DocumentDatabase(path.join(process.cwd(), 'db'))
 
     guildConfigCollection = this.database.getCollection<GuildConfig>('guildConfigs')
 
     getGuildConfigDocument(guildId: string) {
-        return this.guildConfigCollection.getDocument(guildId, DefaultGuildConfig)
+        return this.guildConfigCollection.getDocument(guildId, DefaultGuildConfig())
     }
 }
