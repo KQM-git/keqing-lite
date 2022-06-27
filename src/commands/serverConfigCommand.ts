@@ -6,6 +6,7 @@ import {SlashCommandAutocompleteStringOption} from './liveInteractionCommand'
 import { discordBot } from '..'
 import { DefaultGuildConfig, GuildConfig, GuildConfigMetadata, GuildConfigMetadataKeyData } from '../managers/databaseManager'
 import { stripIndent } from 'common-tags'
+import { hasPermission } from '../utils'
 
 export default class ServerConfigCommand implements Command, IAutocompletableCommand {
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
@@ -55,6 +56,11 @@ export default class ServerConfigCommand implements Command, IAutocompletableCom
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {
+        if (!interaction.memberPermissions?.has('MANAGE_GUILD')) {
+            await interaction.reply({ content: 'You are not authorised to use this command', ephemeral: true })
+            return
+        }
+
         await interaction.deferReply()
 
         if (!interaction.guildId) {
