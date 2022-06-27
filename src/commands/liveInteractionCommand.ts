@@ -25,24 +25,22 @@ export class SlashCommandAutocompleteStringOption extends SlashCommandStringOpti
 
 export default class LiveInteractionCommand implements Command, IAutocompletableCommand {
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
-        return {
-            ...new SlashCommandBuilder()
-                .setName('liveinteraction')
-                .setDescription('Try to display a loaded interaction')
-                .addStringOption(
-                    new SlashCommandAutocompleteStringOption()
-                        .setName('interaction')
-                        .setDescription('path to the interaction')
-                        .setRequired(true)
-                )
-                .addBooleanOption(
-                    new SlashCommandBooleanOption()
-                        .setName('ephemeral')
-                        .setDescription('Ephemeral or not')
-                        .setRequired(false)
-                )
-                .toJSON(),
-        }
+        return new SlashCommandBuilder()
+            .setName('liveinteraction')
+            .setDescription('Try to display a loaded interaction')
+            .addStringOption(
+                new SlashCommandAutocompleteStringOption()
+                    .setName('interaction')
+                    .setDescription('path to the interaction')
+                    .setRequired(true)
+            )
+            .addBooleanOption(
+                new SlashCommandBooleanOption()
+                    .setName('ephemeral')
+                    .setDescription('Ephemeral or not')
+                    .setRequired(false)
+            )
+            .toJSON()
     }
 
     async execute(interaction: CommandInteraction): Promise<void> {

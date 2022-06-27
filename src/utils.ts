@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
-import {MessageOptions, MessageActionRow, MessageSelectMenu, MessageButton, GuildMember, Interaction, CommandInteraction, PermissionResolvable } from 'discord.js'
-import { LiveInteraction, LiveInteractionPermissions } from './managers/liveCommandManager'
-import { NodeVM, VM } from 'vm2'
+import {CommandInteraction, GuildMember, Interaction, PermissionResolvable} from 'discord.js'
+import {LiveInteractionPermissions} from './managers/liveCommandManager'
+import {VM} from 'vm2'
 import yaml from 'js-yaml'
-import { create, all} from 'mathjs'
-import { Constants } from './constants'
+import {all, create} from 'mathjs'
+import {Constants} from './constants'
 
 const utilityConstants = {
     getValuesRecursive,
@@ -15,21 +15,29 @@ const utilityConstants = {
     randomNumberBetween
 }
 
-function substituteTemplateLiterals(str: string, constants: any): any {
+export function substituteTemplateLiterals(str: string, constants: any): any {
     let templateRegex = /(?:\$\{([\s\S]*?)\}|<\$js([\s\S]*?)\$>)/g
     let match
     while ((match = templateRegex.exec(str)) != undefined) {
         if (match.length <= 1) continue
-        
+
         try {
             const mathjs = create(all)
             const mathjsEvaluate = mathjs.evaluate
             mathjs.import({
-                'import': function () { return 'Function `import` is disabled' },
-                'createUnit': function () { return 'Function `createUnit` is disabled' },
-                'evaluate': function () { return 'Function `evaluate` is disabled' },
-                'parse': function () { return 'Function `parse` is disabled' },
-            }, { override: true })
+                'import': function () {
+                    return 'Function `import` is disabled'
+                },
+                'createUnit': function () {
+                    return 'Function `createUnit` is disabled'
+                },
+                'evaluate': function () {
+                    return 'Function `evaluate` is disabled'
+                },
+                'parse': function () {
+                    return 'Function `parse` is disabled'
+                },
+            }, {override: true})
 
             const result = new VM({
                 allowAsync: false,
@@ -46,13 +54,13 @@ function substituteTemplateLiterals(str: string, constants: any): any {
 
             const start = str.slice(0, match.index)
             const end = str.slice(templateRegex.lastIndex)
-            if(start.length > 0 || end.length > 0)
+            if (start.length > 0 || end.length > 0)
                 str = str.slice(0, match.index) + result + str.slice(templateRegex.lastIndex)
-            else 
+            else
                 return result
 
             templateRegex = /(?:\$\{([\s\S]*?)\}|<\$js([\s\S]*?)\$>)/g
-        } catch(error: any) {
+        } catch (error: any) {
             throw new Error(`Error while evaluating JS:${match.index} \n${error.message}\n${error.stack}`)
         }
     }
@@ -85,7 +93,7 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
             'ID': obj.user.id,
             'USERNAME': obj.user.username,
             'TAG': obj.user.discriminator,
-            'AVATAR': obj.user.displayAvatarURL({ size: 4096, format: 'png' })
+            'AVATAR': obj.user.displayAvatarURL({size: 4096, format: 'png'})
         }
     }
 
@@ -96,7 +104,7 @@ export function constantsFromObject(obj: GuildMember | Interaction): any {
             if (option.type == 'SUB_COMMAND' || option.type == 'SUB_COMMAND_GROUP') continue
             if (!constants['$OPTIONS']) constants['$OPTIONS'] = {}
 
-            if(typeof option.value == 'object')
+            if (typeof option.value == 'object')
                 constants['$OPTIONS'][option.name.toUpperCase()] = keysToUpperCaseRecursive(option.value)
             else {
                 constants['$OPTIONS'][option.name.toUpperCase()] = option.value
@@ -116,7 +124,7 @@ export function hasPermission(permissions: LiveInteractionPermissions | undefine
     if (!member) {
         return false
     }
-    
+
     // If the person executing this is a bot admin, give them permission even if they dont have it
     if (isBotAdmin(member)) {
         return true
@@ -148,7 +156,7 @@ export function hasPermission(permissions: LiveInteractionPermissions | undefine
 export function loadYaml<T extends object>(str: string, constants: any): T | undefined {
     const loadedObj = yaml.load(str) as T
     return getProxy(loadedObj, constants)
-} 
+}
 
 function getProxy<T extends object>(obj: T, constants: any): T {
     if (obj == undefined) {
@@ -236,15 +244,29 @@ export function parseHumanDate(str: string) {
 
 function parseDateComponent(str: string) {
     switch (str.toLowerCase()) {
-    case 'y': case 'year': case 'years': case 'yr': case 'yrs':
+    case 'y':
+    case 'year':
+    case 'years':
+    case 'yr':
+    case 'yrs':
         return 3.156e+10
-    case 'min': case 'mins': case 'minute': case 'minutes':
+    case 'min':
+    case 'mins':
+    case 'minute':
+    case 'minutes':
         return 6e+4
-    case 'd': case 'day': case 'days':
+    case 'd':
+    case 'day':
+    case 'days':
         return 8.64e+7
-    case 'h': case 'hr': case 'hrs': case 'hour': case 'hours':
+    case 'h':
+    case 'hr':
+    case 'hrs':
+    case 'hour':
+    case 'hours':
         return 3.6e+6
-    case 'month': case 'months':
+    case 'month':
+    case 'months':
         return 2.628e+9
     default:
         return undefined

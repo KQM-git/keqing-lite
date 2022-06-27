@@ -4,7 +4,7 @@ import { LiveInteractionPermissions } from './liveCommandManager'
 import yaml from 'js-yaml'
 import fs from 'fs'
 import { Collection, Message } from 'discord.js'
-import { constantsFromObject, loadYaml } from '../utils'
+import { constantsFromObject, loadYaml, substituteTemplateLiterals } from '../utils'
 import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 
@@ -17,7 +17,9 @@ interface LiveTrigger {
 }
 
 export class LiveTriggerManager {
+    private prefixTriggerTemplateLiteral = '<[TRIGGER_PREFIX]>'
     private loadedTriggers = new Collection<string, string>()
+
     static liveTriggersDir = path.join(
         Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
         Constants.LIVE_COMMANDS_REPO_BASE_FOLDER_NAME,
@@ -45,7 +47,7 @@ export class LiveTriggerManager {
 
             const trigger = loadYaml(
                 fs.readFileSync(filePath).toString(),
-                discordBot.liveConstants
+                { ...discordBot.liveConstants, TRIGGER_PREFIX: '^'+this.prefixTriggerTemplateLiteral }
             ) as LiveTrigger
             
             console.log(trigger.match, path.join(dir, file))
@@ -72,26 +74,35 @@ export class LiveTriggerManager {
     }
 
     async parseMessage(message: Message) {
-        if (!message.member || message.author.bot) return
+        if (!message.member || message.author.bot || !message.guildId) return
+
+        const guildConfig = discordBot.databaseManager.getGuildConfigDocument(message.guildId).readOnlyValue()
+        const triggerPrefix = guildConfig.triggerPrefix
 
         const content = message.content
         for (const [match] of this.loadedTriggers) {
-            const regex = new RegExp(match, 'g')
+            const regex = new RegExp(match.replace(this.prefixTriggerTemplateLiteral, triggerPrefix), 'g')
             const matches = regex.exec(content) ?? []
             
             if (matches.length == 0) continue
             
-            const constants: any = {
-                '$MATCH': []
+            // Disallow people with the blacklist role
+            if (guildConfig.blacklistRoleId && message.member.roles.cache.has(guildConfig.blacklistRoleId)) {
+                if (!guildConfig.blacklistReply) return
+
+                await message.reply(guildConfig.blacklistReply)
+                return
             }
+
+            const constants: Record<string, unknown> = { '$MATCH': [] }
             
             let index = 0
             for (const match of matches) {
-                constants['$MATCH'][index++] = match
+                (constants['$MATCH'] as string[])[index++] = match
             }
             
             const trigger = this.resolveTrigger(
-                match, 
+                match,
                 { ...constantsFromObject(message.member), ...constants }
             )
 

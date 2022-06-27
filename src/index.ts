@@ -1,24 +1,24 @@
 // Require the necessary discord.js classes
-import { REST } from '@discordjs/rest'
-import AdmZip from 'adm-zip'
-import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { AnyChannel, Client, CommandInteraction, ExcludeEnum, Guild, GuildMember, Intents, Interaction, Message, MessageActionRow, MessageButton, MessageOptions, TextBasedChannel, TextChannel } from 'discord.js'
-import { https } from 'follow-redirects'
-import { Constants } from './constants'
-import { LocalCommandManager } from './managers/commandManager'
-import { LiveCommandManager } from './managers/liveCommandManager'
-import fs from 'fs'
+import {REST} from '@discordjs/rest'
 import fsp from 'fs/promises'
-import { LocalInteractionManager } from './managers/interactionManager'
-import { LiveInteractionManager } from './managers/liveInteractionManager'
+import AdmZip from 'adm-zip'
+import {RESTPatchAPIApplicationCommandJSONBody, Routes} from 'discord-api-types/v9'
+import {Client, ExcludeEnum, GuildMember, Intents} from 'discord.js'
+import {https} from 'follow-redirects'
+import {Constants} from './constants'
+import {LocalCommandManager} from './managers/commandManager'
+import {LiveCommandManager} from './managers/liveCommandManager'
+import fs from 'fs'
+import {LocalInteractionManager} from './managers/interactionManager'
+import {LiveInteractionManager} from './managers/liveInteractionManager'
 import yaml from 'js-yaml'
 import path from 'path'
-import { constantsFromObject, hasPermission, loadYaml } from './utils'
-import { ChannelId, LiveConfig } from './models/LiveConfig'
-import { MessageLiveInteraction } from './models/MessageLiveInteraction'
-import { LiveTriggerManager } from './managers/triggerManager'
-import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
-import { ActivityTypes } from 'discord.js/typings/enums'
+import {hasPermission, loadYaml} from './utils'
+import {LiveConfig} from './models/LiveConfig'
+import {LiveTriggerManager} from './managers/triggerManager'
+import {IAutocompletableCommand, IExecutableCommand} from './commands/command'
+import {ActivityTypes} from 'discord.js/typings/enums'
+import {DatabaseManager} from './managers/databaseManager'
 
 class DiscordBotHandler {
     client = new Client({
@@ -36,14 +36,17 @@ class DiscordBotHandler {
         retryLimit: 2,
         restGlobalRateLimit: 50,
     })
-    restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
+    restClient = new REST({version: '9'}).setToken(Constants.DISCORD_BOT_TOKEN)
 
     localCommandManager = new LocalCommandManager()
     liveCommandManager = new LiveCommandManager()
 
     localInteractionManager = new LocalInteractionManager()
     liveInteractionManager = new LiveInteractionManager()
+
     liveTriggerManager = new LiveTriggerManager()
+
+    databaseManager = new DatabaseManager()
 
     liveConstants: any | undefined = {}
     liveConfig: LiveConfig = {}
@@ -62,14 +65,24 @@ class DiscordBotHandler {
             })
 
             this.client.on('threadUpdate', async (oldThread, newThread) => {
-                if (oldThread.partial) { oldThread = await oldThread.fetch() }
-                if (newThread.parent) { newThread = await newThread.fetch() }
+                if (oldThread.partial) {
+                    oldThread = await oldThread.fetch()
+                }
+                if (newThread.parent) {
+                    newThread = await newThread.fetch()
+                }
 
                 const autoArchiveDuration: string | number | null = oldThread.autoArchiveDuration
-                if (typeof autoArchiveDuration === 'string' || !autoArchiveDuration) { return }
-                
-                if (oldThread.archived || autoArchiveDuration > 144 || oldThread.type == 'GUILD_PRIVATE_THREAD') { return }
-                if (!newThread.archived) { return }
+                if (typeof autoArchiveDuration === 'string' || !autoArchiveDuration) {
+                    return
+                }
+
+                if (oldThread.archived || autoArchiveDuration > 144 || oldThread.type == 'GUILD_PRIVATE_THREAD') {
+                    return
+                }
+                if (!newThread.archived) {
+                    return
+                }
 
                 try {
                     const starterMessage = await newThread.fetchStarterMessage()
@@ -97,7 +110,10 @@ class DiscordBotHandler {
                         if (commandPerms) {
                             if (!hasPermission(commandPerms, interaction.member as GuildMember)) {
                                 if (interaction.isCommand())
-                                    await interaction.reply({ content: 'You don\'t have permission to execute this command', ephemeral: true })
+                                    await interaction.reply({
+                                        content: 'You don\'t have permission to execute this command',
+                                        ephemeral: true
+                                    })
                                 return
                             }
                         }
@@ -128,7 +144,7 @@ class DiscordBotHandler {
 
                     console.error(error)
                     if (interaction.replied || interaction.deferred) {
-                        await interaction.editReply({ content: '**ERROR**: ' + error })
+                        await interaction.editReply({content: '**ERROR**: ' + error})
                     } else {
                         await interaction.reply({content: `**ERROR:** ${error}`, ephemeral: true})
                     }
@@ -164,16 +180,16 @@ class DiscordBotHandler {
         })
     }
 
-    logInternalError(error: any, message: {url?: string} | undefined = undefined) {
+    logInternalError(error: any, message: { url?: string } | undefined = undefined) {
         console.log(error)
     }
 
     async loadCommands() {
         await this.downloadAndExtractLiveCommandRepo()
-        
+
         this.loadConstants()
         this.loadConfig()
-        
+
         await this.loadActivity()
 
         this.liveTriggerManager.loadTriggers()
@@ -208,7 +224,7 @@ class DiscordBotHandler {
 
             console.log(`loaded constants: ${JSON.stringify(this.liveConstants, null, 2)}`)
         } catch (error: any) {
-            throw new Error('Unable to load constants\n'+error)
+            throw new Error('Unable to load constants\n' + error)
         }
     }
 
@@ -233,7 +249,7 @@ class DiscordBotHandler {
             ) ?? {}
 
             console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
-        } catch(error: any) {
+        } catch (error: any) {
             throw new Error('Unable to load config\n' + error)
         }
     }
@@ -249,14 +265,14 @@ class DiscordBotHandler {
             console.log(`Registering Command: ${command.name}, AC ${command.autocomplete ?? false}`)
         }
 
-        await this.restClient.put(Routes.applicationCommands(Constants.DISCORD_CLIENT_ID), { body: Object.values(hashSet) })
+        await this.restClient.put(Routes.applicationCommands(Constants.DISCORD_CLIENT_ID), {body: Object.values(hashSet)})
     }
 
     async downloadAndExtractLiveCommandRepo() {
         const downloadFilePath = Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR + '.zip'
 
         if (fs.existsSync(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR))
-            await fsp.rm(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, { recursive: true, force: true })
+            await fsp.rm(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, {recursive: true, force: true})
 
         if (fs.existsSync(downloadFilePath))
             await fsp.rm(downloadFilePath)

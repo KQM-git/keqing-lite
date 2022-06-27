@@ -3,7 +3,6 @@ import { Command } from './command'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
 import { SlashCommandBuilder } from '@discordjs/builders'
 import { discordBot } from '..'
-import { stripIndent } from 'common-tags'
 import { Constants } from '../constants'
   
 export default class BotInfoCommand implements Command {
