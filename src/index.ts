@@ -19,6 +19,7 @@ import {LiveTriggerManager} from './managers/triggerManager'
 import {IAutocompletableCommand, IExecutableCommand} from './commands/command'
 import {ActivityTypes} from 'discord.js/typings/enums'
 import {DatabaseManager} from './managers/databaseManager'
+import { exit } from 'process'
 
 class DiscordBotHandler {
     client = new Client({
@@ -105,7 +106,7 @@ class DiscordBotHandler {
                 console.log('Interaction Created')
                 try {
                     if (interaction.isCommand() || interaction.isAutocomplete()) {
-                        const commandName = path.join(interaction.commandName, interaction.options.getSubcommand(false) ?? '')
+                        const commandName = path.join(interaction.commandName, interaction.options.getString('subcommand') ?? '')
                         const commandPerms = this.liveConfig.permissions?.[commandName]
                         if (commandPerms) {
                             if (!hasPermission(commandPerms, interaction.member as GuildMember)) {
@@ -120,7 +121,7 @@ class DiscordBotHandler {
 
                         const CommandClass =
                             this.localCommandManager.resolveLocalCommandClass(interaction.commandName) ??
-                            this.liveCommandManager.resolveLiveCommandClass(interaction.commandName, interaction.options.getSubcommand(false) ?? undefined)
+                            this.liveCommandManager.resolveLiveCommandClass(interaction.commandName)
                         if (!CommandClass) return
 
                         const commandInstance: IExecutableCommand | IAutocompletableCommand = new CommandClass()
@@ -163,6 +164,7 @@ class DiscordBotHandler {
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
             await this.logInternalError(error)
             this.client.destroy()
+            exit(1)
         }
     }
 

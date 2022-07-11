@@ -15,6 +15,7 @@ import LiveCommand from '../commands/liveCommand'
 import { SharedSlashCommandOptions } from '@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptions'
 import { loadYaml, cleanString } from '../utils'
 import { discordBot } from '..'
+import { SlashCommandAutocompleteStringOption } from '../commands/liveInteractionCommand'
 
 export interface LiveInteractionPermissions {
     blacklist?: string[]
@@ -31,14 +32,15 @@ export interface LiveInteraction {
 
 export class LiveCommandManager {
     private loadedCommands = new Collection<string, string>()
+    subcommands = new Collection<string, string[]>()
 
     getLiveCommands(): RESTPatchAPIApplicationCommandJSONBody[] {
         this.loadedCommands.clear()
+        this.subcommands.clear()
 
         this.loadLiveCommands()
 
         const commands: SlashCommandBuilder[] = []
-        const nestedCommands = new Collection<string, SlashCommandSubcommandsOnlyBuilder>()
 
         for (const [key, filePath] of this.loadedCommands) {
             console.log('loading '+key)
@@ -50,39 +52,34 @@ export class LiveCommandManager {
             const command: SlashCommandBuilder = new SlashCommandBuilder()
                 .setName(commandName)
             
-            if (subcommands.length == 0) {
+            
+            if (subcommands.length > 0) {
+                const subcommand = subcommands.join('/')
+                const existingSubcommands = this.subcommands.get(commandName)
+                if (existingSubcommands) {
+                    this.subcommands.set(commandName, [...existingSubcommands, subcommand])
+                    continue
+                }
+                
+                this.subcommands.set(commandName, [subcommand])
+
+                command.addStringOption(
+                    new SlashCommandAutocompleteStringOption()
+                        .setName('subcommand')
+                        .setDescription('subcommand')
+                        .setRequired(true)
+                )
+            } else {
                 if (typeof value.options == 'object') {
                     this.addOptions(command, value.options)
                 }
-
-                commands.push(command.setDescription(value.description))
-            } else if(subcommands.length == 1) {
-                const subcommand = subcommands.shift()!
-                const nestedCommand = nestedCommands.get(commandName) ?? command
-
-                nestedCommands.set(commandName, nestedCommand.setDescription(commandName)
-                    .addSubcommand(builder => {
-                        builder = builder
-                            .setName(subcommand)
-                            .setDescription(value.description)
-                        
-                        if (typeof value.options == 'object') {
-                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                            // @ts-ignore
-                            this.addOptions(builder, value.options)
-                        }
-                
-                        return builder
-                    }))
-            } else {
-                throw new Error('Subcommands can only nest once. evaluating ' + key)
             }
+
+
+            commands.push(command.setDescription(value.description))
         }
 
-        return [ 
-            ...commands.map(x => x.toJSON()),
-            ...nestedCommands.map(x => x.toJSON())
-        ]
+        return commands.map(x => x.toJSON())
     }
 
     private loadLiveCommands(dirs: string[] = []) {
@@ -106,13 +103,9 @@ export class LiveCommandManager {
         }
     }
 
-    resolveLiveCommandClass(commandName: string, subcommand: string | undefined = undefined): (new () => IExecutableCommand | IAutocompletableCommand) | undefined {
-        if (subcommand) {
-            commandName = path.join(commandName, subcommand)
-        }
-
-        if (!this.loadedCommands.has(commandName)) return undefined
-        return LiveCommand
+    resolveLiveCommandClass(commandName: string): (new () => IExecutableCommand | IAutocompletableCommand) | undefined {
+        if (this.loadedCommands.has(commandName) || this.subcommands.has(commandName)) return LiveCommand
+        return undefined
     }
 
     resolveLiveCommand(commandName: string, subcommand: string | undefined = undefined, constants: any): any | undefined {

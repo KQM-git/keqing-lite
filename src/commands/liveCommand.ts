@@ -1,12 +1,36 @@
 import { SlashCommandBuilder, SlashCommandStringOption } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types/v9'
-import { CommandInteraction, GuildMember } from 'discord.js'
+import { AutocompleteInteraction, CacheType, CommandInteraction, GuildMember } from 'discord.js'
 import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 import { constantsFromObject, hasPermission, cleanString } from '../utils'
-import { Command } from './command'
+import { Command, IAutocompletableCommand } from './command'
 
-export default class LiveCommand implements Command {
+export default class LiveCommand implements Command, IAutocompletableCommand {
+    async handleAutocomplete(interaction: AutocompleteInteraction<CacheType>): Promise<void> {
+        const focusedOption = interaction.options.getFocused(true)
+        const commandName = interaction.commandName
+        if (focusedOption.name == 'subcommand' && typeof focusedOption.value == 'string') {
+            const subcommands = discordBot.liveCommandManager.subcommands.get(commandName)
+            if (!subcommands) return
+            
+            const choices: string[] = []
+            for (const interactionName of subcommands) {
+                if (!interactionName.includes(focusedOption.value)) continue
+                choices.push(interactionName)
+            }
+
+            return interaction.respond(
+                choices
+                    .sort((a, b) => a.length - b.length)
+                    .map(x => ({ name: x, value: x }))
+                    .slice(0, 25)
+            )
+        } else {
+            return
+        }
+    }
+    
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
         return new SlashCommandBuilder()
             .setName('livecommand')
@@ -33,7 +57,7 @@ export default class LiveCommand implements Command {
             return
         }
         
-        const subcommand = interaction.options.getSubcommand(false) ?? undefined
+        const subcommand = interaction.options.getString('subcommand') ?? undefined
         const liveCommand: any = discordBot.liveCommandManager.resolveLiveCommand(liveCommandName, subcommand, constants)
         if (!liveCommand) {
             throw new Error('Unable to parse resolve live command ' + liveCommandName + ' subcommand: '+ subcommand)
