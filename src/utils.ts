@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import {CommandInteraction, GuildMember, Interaction, PermissionResolvable} from 'discord.js'
-import {LiveInteractionPermissions} from './managers/liveCommandManager'
 import {VM} from 'vm2'
 import yaml from 'js-yaml'
 import {all, create} from 'mathjs'
 import {Constants} from './constants'
+import { LiveInteractionPermissions } from './models/LiveInteraction'
 
 const utilityConstants = {
     getValuesRecursive,
@@ -15,7 +15,7 @@ const utilityConstants = {
     randomNumberBetween
 }
 
-export function substituteTemplateLiterals(str: string, constants: any): any {
+function substituteTemplateLiterals(str: string, constants: Record<string, unknown>, errors: unknown[]): string {
     let templateRegex = /(?:\$\{([\s\S]*?)\}|<\$js([\s\S]*?)\$>)/g
     let match
     while ((match = templateRegex.exec(str)) != undefined) {
@@ -60,8 +60,8 @@ export function substituteTemplateLiterals(str: string, constants: any): any {
                 return result
 
             templateRegex = /(?:\$\{([\s\S]*?)\}|<\$js([\s\S]*?)\$>)/g
-        } catch (error: any) {
-            throw new Error(`Error while evaluating JS:${match.index} \n${error.message}\n${error.stack}`)
+        } catch (error: unknown) {
+            errors.push(error)
         }
     }
 
@@ -153,27 +153,23 @@ export function hasPermission(permissions: LiveInteractionPermissions | undefine
     return true
 }
 
-export function loadYaml<T extends object>(str: string, constants: any): T | undefined {
+export function loadYaml<T extends object>(str: string, constants: Record<string, unknown>, errors: unknown[]): T | undefined {
     const loadedObj = yaml.load(str) as T
-    return getProxy(loadedObj, constants)
+    return injectConstants(loadedObj, constants, errors) as T
 }
 
-function getProxy<T extends object>(obj: T, constants: any): T {
+export function injectConstants(obj: unknown, constants: Record<string, unknown>, errors: unknown[]): unknown {
     if (obj == undefined) {
         return obj
     } else if (typeof obj == 'string') {
-        return substituteTemplateLiterals(obj, constants)
+        return substituteTemplateLiterals(obj, constants, errors)
     } else if (Array.isArray(obj)) {
         // @ts-ignore
-        return obj.map(v => getProxy(v, constants))
+        return obj.map(v => injectConstants(v, constants, errors))
     } else if (typeof obj == 'object') {
-        return new Proxy<T>(obj, {
-            get: (target, name) => {
-                // @ts-ignore
-                const value = target?.[name]
-                return getProxy(value, constants)
-            }
-        })
+        const newObj: Record<string, unknown> = {}
+        Object.keys(obj).forEach(key => newObj[key] = injectConstants((obj as any)[key], constants, errors))
+        return newObj
     }
 
     return obj

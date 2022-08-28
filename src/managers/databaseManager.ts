@@ -32,7 +32,7 @@ export interface GuildConfig {
     blacklistReply?: string
 }
 
-const DefaultGuildConfig: () => GuildConfig = () => ({
+export const DefaultGuildConfig: () => GuildConfig = () => ({
     triggerPrefix: 'k!'
 })
 

@@ -1,24 +1,16 @@
 import { Constants } from '../constants'
 import path from 'path'
-import { LiveInteractionPermissions } from './liveCommandManager'
-import yaml from 'js-yaml'
 import fs from 'fs'
-import { Collection, Message } from 'discord.js'
-import { constantsFromObject, loadYaml, substituteTemplateLiterals } from '../utils'
+import { Message, TextBasedChannel } from 'discord.js'
+import { constantsFromObject, injectConstants, loadYaml } from '../utils'
 import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
+import { LiveTrigger } from '../models/LiveTrigger'
 
-interface LiveTrigger {
-    match: string
-    interaction: string
-    regexFlags: string
-
-    channels?: LiveInteractionPermissions
-}
 
 export class LiveTriggerManager {
     private prefixTriggerTemplateLiteral = '<[TRIGGER_PREFIX]>'
-    private loadedTriggers = new Collection<string, string>()
+    private loadedTriggers: LiveTrigger[] = []
 
     static liveTriggersDir = path.join(
         Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
@@ -32,11 +24,12 @@ export class LiveTriggerManager {
 
     loadTriggers(dir = '') {
         if(dir.length == 0) {
-            this.loadedTriggers.clear()
+            this.loadedTriggers = []
         }
         
         for(const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
             const filePath = path.join(LiveTriggerManager.liveTriggersDir, dir, file)
+            console.log(`Loading: ${path.join(dir, file)}`)
 
             if (fs.lstatSync(filePath).isDirectory()) {
                 this.loadTriggers(path.join(dir, file))
@@ -47,42 +40,39 @@ export class LiveTriggerManager {
 
             const trigger = loadYaml(
                 fs.readFileSync(filePath).toString(),
-                { ...discordBot.liveConstants, TRIGGER_PREFIX: '^'+this.prefixTriggerTemplateLiteral }
+                discordBot.liveConstants,
+                []
             ) as LiveTrigger
             
-            console.log(trigger.match, path.join(dir, file))
-            this.loadedTriggers.set(
-                trigger.match,
-                filePath
-            )
-        }
-    }
-
-    resolveTrigger(match: string, constants: any): LiveTrigger | undefined {
-        try {
-            const interactionPath = this.loadedTriggers.get(match)
-
-            if (!interactionPath || !fs.existsSync(interactionPath)) return undefined
-
-            return loadYaml(
-                fs.readFileSync(interactionPath).toString(),
-                { ...discordBot.liveConstants, ...constants }
-            )
-        } catch (error) {
-            throw new Error(`Unable to load trigger for ${match}\n${error}`)
+            console.log(`Match: ${trigger.match}. Loaded!`)
+            this.loadedTriggers.push(trigger)
         }
     }
 
     async parseMessage(message: Message) {
+        try {
+            return this._parseMessage(message)
+        } catch(error) {
+            console.log(error)
+            message.reply('An error occurred while trying to parse the LiveInteraction. Please ping one of the Bot Admins in the KQM server.')
+        }
+    }
+
+    private async _parseMessage(message: Message) {
         if (!message.member || message.author.bot || !message.guildId) return
 
         const guildConfig = discordBot.databaseManager.getGuildConfigDocument(message.guildId).readOnlyValue()
         const triggerPrefix = guildConfig.triggerPrefix
 
         const content = message.content
-        for (const [match] of this.loadedTriggers) {
-            const regex = new RegExp(match.replace(this.prefixTriggerTemplateLiteral, triggerPrefix), 'g')
+        for (let trigger of this.loadedTriggers) {
+            const match = injectConstants(trigger.match, {
+                TRIGGER_PREFIX: `^${triggerPrefix.replace(/[#-}]/g, '\\$&')}`
+            }, []) as string
+
+            const regex = new RegExp(match, `g${trigger.ignoreCase ? 'i' : ''}`)
             const matches = regex.exec(content) ?? []
+            // console.log(`Tested: ${match} against ${content}; Matches: ${matches}`)
             
             if (matches.length == 0) continue
             
@@ -94,18 +84,16 @@ export class LiveTriggerManager {
                 return
             }
 
-            const constants: Record<string, unknown> = { '$MATCH': [] }
+            const matchConstants: Record<string, unknown> = { '$MATCH': [] }
             
             let index = 0
             for (const match of matches) {
-                (constants['$MATCH'] as string[])[index++] = match
+                (matchConstants['$MATCH'] as string[])[index++] = match
             }
-            
-            const trigger = this.resolveTrigger(
-                match,
-                { ...constantsFromObject(message.member), ...constants }
-            )
 
+            trigger = injectConstants(trigger, {
+                ...constantsFromObject(message.member), ...matchConstants
+            }, []) as LiveTrigger
             if (!trigger) continue
 
             if (trigger.channels) {
@@ -121,22 +109,72 @@ export class LiveTriggerManager {
                 }
             }
             
-            const interaction = discordBot.liveInteractionManager.resolveLiveInteraction(
-                trigger.interaction,
-                { ...constantsFromObject(message.member), ...constants }
+            const primaryInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(
+                trigger.interaction
             )
 
-            if (!interaction) {
+            if (!primaryInteraction) {
                 await message.reply({content: 'Unable to resolve interaction: ' + trigger.interaction})
                 continue
             }
 
-            const interactionMessage = new MessageLiveInteraction(interaction)
-            if (!interactionMessage.memberIsAllowedToExecute(message.member)) {
+            const primaryMessage = new MessageLiveInteraction(primaryInteraction)
+            if (!primaryMessage.memberIsAllowedToExecute(message.member)) {
                 continue
             }
 
-            await message.reply({ ...interactionMessage.toMessage(), allowedMentions: { repliedUser: false } })
+            const primaryPayload = { ...primaryMessage.toMessage(), allowedMentions: { repliedUser: false } }
+
+            if (trigger.defer) {
+                let deferChannel: TextBasedChannel | undefined
+                if (trigger.defer == 'dm') {
+                    deferChannel = await message.member.createDM()
+                } else {
+                    const channel = await discordBot.client.channels.fetch(trigger.defer)
+                    if (channel?.isText()) {
+                        deferChannel = channel
+                    } else {
+                        deferChannel = message.channel
+                    }
+                }
+
+                if (trigger.deferInteraction) {
+                    const secondaryInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(
+                        trigger.deferInteraction,
+                        { ...constantsFromObject(message.member), ...matchConstants }
+                    )
+        
+                    if (!secondaryInteraction) {
+                        await message.reply({content: 'Unable to resolve interaction: ' + trigger.interaction})
+                        continue
+                    }
+        
+                    const secondaryMessage = new MessageLiveInteraction(secondaryInteraction)
+                    const secondaryPayload = secondaryMessage.toMessage()
+
+                    await deferChannel.send(secondaryPayload)
+                    
+                    if (trigger.deleteTrigger && message.deletable) {
+                        await message.delete()
+                        await message.channel.send(primaryPayload)
+                    } else {
+                        await message.reply(primaryPayload)
+                    }
+                } else {
+                    if (trigger.deleteTrigger && message.deletable) {
+                        await message.delete()
+                    }
+
+                    await deferChannel.send(primaryPayload)
+                }
+            } else {
+                if (trigger.deleteTrigger && message.deletable) {
+                    await message.delete()
+                    await message.channel.send(primaryPayload)
+                } else {
+                    await message.reply(primaryPayload)
+                }
+            }
         } 
     }
 

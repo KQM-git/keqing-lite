@@ -1,11 +1,9 @@
 import { Constants } from '../constants'
 import path from 'path'
-import { LiveInteraction, LiveCommandManager } from './liveCommandManager'
-import yaml from 'js-yaml'
 import fs from 'fs'
-import { Collection, CommandInteractionOptionResolver } from 'discord.js'
-import { loadYaml } from '../utils'
+import { injectConstants, loadYaml } from '../utils'
 import { discordBot } from '..'
+import { LiveInteraction } from '../models/LiveInteraction'
 
 export class LiveInteractionManager {
     static liveInteractionsDir = path.join(
@@ -29,26 +27,41 @@ export class LiveInteractionManager {
         })
     }
 
-    resolveLiveInteraction(interaction: any, constants: any = {}): LiveInteraction | undefined {
+    resolveLiveInteraction(interaction: LiveInteraction | string, constants: Record<string, unknown> = {}): LiveInteraction | undefined {
         if (typeof interaction == 'string') {
             return this.getLiveInteraction(interaction, constants)
         } else if (typeof interaction == 'object') {
-            return interaction
+            const errors: Error[] = []
+            const injectedInteraction = injectConstants(interaction, constants, errors) as LiveInteraction
+
+            if (errors.length > 0) {
+                throw new Error(errors.map(x => x.message).join('\n'))
+            }
+
+            return injectedInteraction
         } else {
             return undefined
         }
     }
 
-    private getLiveInteraction(interactionName: string, constants: any) {
+    private getLiveInteraction(interactionName: string, constants: Record<string, unknown>) {
         try {
             const interactionPath = path.join(LiveInteractionManager.liveInteractionsDir, interactionName + '.yaml')
 
             if (!fs.existsSync(interactionPath)) return undefined
 
-            return loadYaml(
+            const errors: Error[] = []
+            const interaction = loadYaml(
                 fs.readFileSync(interactionPath).toString(),
-                { ...discordBot.liveConstants, ...constants }
-            )
+                { ...discordBot.liveConstants, ...constants },
+                errors
+            ) as LiveInteraction
+
+            if (errors.length > 0) {
+                throw new Error(errors.map(x => x.message).join('\n'))
+            }
+
+            return interaction
         } catch (error) {
             throw new Error(`Unable to load interaction ${interactionName}\n${error}`)
         }

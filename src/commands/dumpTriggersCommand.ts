@@ -1,13 +1,10 @@
-import { SlashCommandBuilder, SlashCommandStringOption } from '@discordjs/builders'
+import { SlashCommandBuilder } from '@discordjs/builders'
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord-api-types'
-import { CommandInteraction, Guild, GuildMember, Message, MessageActionRow, MessageAttachment, MessageButton, MessageEmbed } from 'discord.js'
-import fs from 'fs'
-import path from 'path'
+import { CommandInteraction, GuildMember, MessageAttachment } from 'discord.js'
 import { discordBot } from '..'
-import { Constants } from '../constants'
-import { LiveTriggerManager } from '../managers/triggerManager'
-import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
-import { hasPermission } from '../utils'
+import { DefaultGuildConfig, GuildConfig } from '../managers/databaseManager'
+import { LiveTrigger } from '../models/LiveTrigger'
+import { hasPermission, injectConstants } from '../utils'
 import { Command } from './command'
 
 export default class DumpTriggersCommand implements Command {
@@ -26,15 +23,28 @@ export default class DumpTriggersCommand implements Command {
         
         await interaction.deferReply()
 
+        let guildConfig: GuildConfig = DefaultGuildConfig()
+        if (interaction.guildId) {
+            guildConfig = discordBot.databaseManager.getGuildConfigDocument(interaction.guildId).readOnlyValue()   
+        }
+
         const triggers = discordBot.liveTriggerManager.getAllLoadedTriggers()
-        const triggerFile = triggers.map((value, key) => `${key}: ${value.replace(LiveTriggerManager.liveTriggersDir, '')}`).join('\n')
+        const triggerFile = triggers.map(trigger => {
+            const errors: Error[] = []
+
+            trigger = injectConstants(trigger, {
+                TRIGGER_PREFIX: guildConfig.triggerPrefix
+            }, errors) as LiveTrigger
+
+            return `${errors.length > 0 ? '(ℹ) ' : ''}${trigger.match}: "${trigger.description ?? 'No Description'}"`
+        }).sort().join('\n')
 
         await interaction.editReply({
             content: 'All loaded triggers',
             files: [
                 new MessageAttachment(
                     Buffer.from(triggerFile),
-                    'alltriggers.yaml'
+                    'alltriggers.css'
                 ),
             ]
         })

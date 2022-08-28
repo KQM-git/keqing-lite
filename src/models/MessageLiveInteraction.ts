@@ -1,8 +1,7 @@
-import { APIInteractionGuildMember } from 'discord-api-types'
-import { GuildMember, Interaction, InteractionButtonOptions, InteractionReplyOptions, Message, MessageActionRow, MessageButton, MessageButtonOptions, MessageOptions, MessageSelectMenu } from 'discord.js'
+import { GuildMember, Interaction, InteractionButtonOptions, InteractionReplyOptions, Message, MessageActionRow, MessageButton, MessageOptions, MessageSelectMenu } from 'discord.js'
 import { APIMessage } from 'discord.js/node_modules/discord-api-types'
-import { LiveInteraction } from '../managers/liveCommandManager'
 import { hasPermission } from '../utils'
+import { LiveInteraction } from './LiveInteraction'
 
 
 // @deprecated use LiveInteraction.asMessage()

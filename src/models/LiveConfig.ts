@@ -1,6 +1,6 @@
 import {ExcludeEnum} from 'discord.js'
 import {ActivityTypes} from 'discord.js/typings/enums'
-import {LiveInteractionPermissions} from '../managers/liveCommandManager'
+import {LiveInteractionPermissions} from './LiveInteraction'
 
 export type InteractionPath = string
 export type EmojiId = string

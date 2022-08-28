@@ -19,7 +19,7 @@ import {LiveTriggerManager} from './managers/triggerManager'
 import {IAutocompletableCommand, IExecutableCommand} from './commands/command'
 import {ActivityTypes} from 'discord.js/typings/enums'
 import {DatabaseManager} from './managers/databaseManager'
-import { exit } from 'process'
+
 
 class DiscordBotHandler {
     client = new Client({
@@ -95,15 +95,15 @@ class DiscordBotHandler {
 
             this.client.on('messageCreate', async message => {
                 try {
-                    console.log('messageCreate')
+                    // console.log('messageCreate')
                     await this.liveTriggerManager.parseMessage(message)
-                } catch (err) {
-                    this.logInternalError(err, message)
+                } catch (err: any) {
+                    message.channel.send({ content: err.message })
                 }
             })
 
             this.client.on('interactionCreate', async interaction => {
-                console.log('Interaction Created')
+                // console.log('Interaction Created')
                 try {
                     if (interaction.isCommand() || interaction.isAutocomplete()) {
                         const commandName = path.join(interaction.commandName, interaction.options.getString('subcommand') ?? '')
@@ -139,11 +139,10 @@ class DiscordBotHandler {
                     }
                 } catch (error) {
                     if (!interaction.isCommand() && !interaction.isSelectMenu() && !interaction.isMessageComponent()) {
-                        await this.logInternalError(error)
+                        console.error(error)
                         return
                     }
 
-                    console.error(error)
                     if (interaction.replied || interaction.deferred) {
                         await interaction.editReply({content: '**ERROR**: ' + error})
                     } else {
@@ -153,18 +152,17 @@ class DiscordBotHandler {
             })
 
             this.client.on('error', async error => {
-                await this.logInternalError(error)
+                console.error(error)
             })
 
             // Login to Discord with your client's token
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
 
         } catch (error: any) {
-            console.log('interal error')
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
-            await this.logInternalError(error)
+            console.error(error)
             this.client.destroy()
-            exit(1)
+            process.exit(1)
         }
     }
 
@@ -173,6 +171,8 @@ class DiscordBotHandler {
         if (!activity) return
 
         await this.setActivity(activity.message, activity.type)
+
+        console.log(`Activity Set: ${activity.message}`)
     }
 
     async setActivity(message: string, type: ExcludeEnum<typeof ActivityTypes, 'CUSTOM'>) {
@@ -180,10 +180,6 @@ class DiscordBotHandler {
             name: message,
             type: type as number
         })
-    }
-
-    logInternalError(error: any, message: { url?: string } | undefined = undefined) {
-        console.log(error)
     }
 
     async loadCommands() {
@@ -224,7 +220,7 @@ class DiscordBotHandler {
                 fs.readFileSync(liveConstantsPath).toString()
             ) ?? {}
 
-            console.log(`loaded constants: ${JSON.stringify(this.liveConstants, null, 2)}`)
+            console.log('LiveConstants Loaded!')
         } catch (error: any) {
             throw new Error('Unable to load constants\n' + error)
         }
@@ -245,12 +241,18 @@ class DiscordBotHandler {
         }
 
         try {
+            const errors: Error[] = []
             this.liveConfig = loadYaml(
                 fs.readFileSync(liveConfigPath).toString(),
-                this.liveConstants
+                this.liveConstants,
+                errors
             ) ?? {}
 
-            console.log(`loaded config: ${JSON.stringify(this.liveConfig, null, 2)}`)
+            if (errors.length > 0) {
+                throw new Error(errors.map(x => x.message).join('\n'))
+            }
+
+            console.log('LiveConfig Loaded!')
         } catch (error: any) {
             throw new Error('Unable to load config\n' + error)
         }

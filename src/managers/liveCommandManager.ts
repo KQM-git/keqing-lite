@@ -1,34 +1,16 @@
-import AdmZip from 'adm-zip'
 import { Constants } from '../constants'
-import { https } from 'follow-redirects'
 import fs from 'fs'
-import fsp from 'fs/promises'
-import { REST } from '@discordjs/rest'
 import path from 'path'
-import { SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandsOnlyBuilder } from '@discordjs/builders'
-import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
+import { SlashCommandBuilder } from '@discordjs/builders'
+import { RESTPatchAPIApplicationCommandJSONBody } from 'discord-api-types/v9'
 import yaml from 'js-yaml'
 import Collection from '@discordjs/collection'
-import { MessageButtonOptions, MessageEmbedOptions, MessageSelectOptionData } from 'discord.js'
 import { IAutocompletableCommand, IExecutableCommand } from '../commands/command'
 import LiveCommand from '../commands/liveCommand'
-import { SharedSlashCommandOptions } from '@discordjs/builders/dist/interactions/slashCommands/mixins/CommandOptions'
 import { loadYaml, cleanString } from '../utils'
 import { discordBot } from '..'
 import { SlashCommandAutocompleteStringOption } from '../commands/liveInteractionCommand'
 
-export interface LiveInteractionPermissions {
-    blacklist?: string[]
-    whitelist?: string[]
-}
-
-export interface LiveInteraction {
-    content?: string
-    options?: MessageSelectOptionData[]
-    embeds?: MessageEmbedOptions[]
-    buttons?: MessageButtonOptions[]
-    permissions?: LiveInteractionPermissions
-}
 
 export class LiveCommandManager {
     private loadedCommands = new Collection<string, string>()
@@ -119,7 +101,8 @@ export class LiveCommandManager {
             
             return loadYaml(
                 fs.readFileSync(filePath).toString(),
-                { ...discordBot.liveConstants, ...constants }
+                { ...discordBot.liveConstants, ...constants },
+                []
             )
         } catch (error) {
             console.log(error)
