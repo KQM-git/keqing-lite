@@ -110,7 +110,8 @@ export class LiveTriggerManager {
             }
             
             const primaryInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(
-                trigger.interaction
+                trigger.interaction,
+                { ...constantsFromObject(message.member), ...matchConstants }
             )
 
             if (!primaryInteraction) {
