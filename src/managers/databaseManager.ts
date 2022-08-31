@@ -1,5 +1,6 @@
 import path from 'path'
 import {DocumentDatabase} from '../database/database'
+import { LiveInteraction } from '../models/LiveInteraction'
 
 export interface GuildConfigMetadataKeyData {
     description: string
@@ -32,6 +33,13 @@ export interface GuildConfig {
     blacklistReply?: string
 }
 
+export interface StickyMessage {
+    interaction?: LiveInteraction
+    intervalBetweenMessages?: number
+    lastMessageTime?: number
+    lastMessageId?: string
+}
+
 export const DefaultGuildConfig: () => GuildConfig = () => ({
     triggerPrefix: 'k!'
 })
@@ -43,5 +51,20 @@ export class DatabaseManager {
 
     getGuildConfigDocument(guildId: string) {
         return this.guildConfigCollection.getDocument(guildId, DefaultGuildConfig())
+    }
+
+    async getStickyMessage(guildId: string, channelId: string) {
+        const stickyMessage = this.database.getCollection<StickyMessage>(`stickyMessages/${guildId}`)
+            .getDocument(channelId, {})
+        
+        return await stickyMessage.get('interaction') ? stickyMessage : undefined
+    }
+    async setStickyMessage(guildId: string, channelId: string, message: StickyMessage) {
+        const stickyMessage = this.database.getCollection<StickyMessage>(`stickyMessages/${guildId}`)
+            .getDocument(channelId, {})
+
+        await stickyMessage.forceSync(message)
+
+        return stickyMessage
     }
 }

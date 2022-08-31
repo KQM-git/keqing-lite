@@ -25,7 +25,7 @@ export class LiveCommandManager {
         const commands: SlashCommandBuilder[] = []
 
         for (const [key, filePath] of this.loadedCommands) {
-            console.log('loading '+key)
+            console.log('loading ' + key)
             const value: any = yaml.load(fs.readFileSync(filePath).toString())
             const subcommands = key.split('/')
             const commandName = subcommands.shift()

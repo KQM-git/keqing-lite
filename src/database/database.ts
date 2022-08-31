@@ -10,7 +10,7 @@ import { Mutex } from 'async-mutex'
 export class DocumentDatabase {
     constructor(private databaseFolder: string) {
         if (fs.existsSync(databaseFolder)) return
-        fs.mkdirSync(databaseFolder)
+        fs.mkdirSync(databaseFolder, { recursive: true })
     }
     
     getCollection<T extends object>(name: string): DocumentCollection<T> {
@@ -23,7 +23,7 @@ export class DocumentCollection<T extends object> {
 
     constructor(private folderPath: string) {
         if (fs.existsSync(folderPath)) return
-        fs.mkdirSync(folderPath)
+        fs.mkdirSync(folderPath, { recursive: true })
     }
 
     async addDocument(name: string, document: T): Promise<Document<T>> {

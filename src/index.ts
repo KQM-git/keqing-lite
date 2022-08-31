@@ -19,6 +19,7 @@ import {LiveTriggerManager} from './managers/triggerManager'
 import {IAutocompletableCommand, IExecutableCommand} from './commands/command'
 import {ActivityTypes} from 'discord.js/typings/enums'
 import {DatabaseManager} from './managers/databaseManager'
+import { StickyManager } from './managers/stickyManager'
 
 
 class DiscordBotHandler {
@@ -46,6 +47,7 @@ class DiscordBotHandler {
     liveInteractionManager = new LiveInteractionManager()
 
     liveTriggerManager = new LiveTriggerManager()
+    stickyManager = new StickyManager()
 
     databaseManager = new DatabaseManager()
 
@@ -97,6 +99,7 @@ class DiscordBotHandler {
                 try {
                     // console.log('messageCreate')
                     await this.liveTriggerManager.parseMessage(message)
+                    await this.stickyManager.messageReceived(message)
                 } catch (err: any) {
                     message.channel.send({ content: err.message })
                 }
