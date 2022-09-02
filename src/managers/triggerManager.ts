@@ -61,7 +61,7 @@ export class LiveTriggerManager {
     private async _parseMessage(message: Message) {
         if (!message.member || message.author.bot || !message.guildId) return
 
-        const guildConfig = discordBot.databaseManager.getGuildConfigDocument(message.guildId).readOnlyValue()
+        const guildConfig = discordBot.databaseManager.getGuildConfigDocument(message.guildId)
         const triggerPrefix = guildConfig.triggerPrefix
 
         const content = message.content

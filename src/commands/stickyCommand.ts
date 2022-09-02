@@ -61,15 +61,15 @@ export default class StickyCommand implements Command {
             return
         }
 
-        const stickyMessage = await discordBot.databaseManager.getStickyMessage(interaction.guildId, interaction.channelId)
+        const stickyMessage = discordBot.stickyManager.getStickyMessage(interaction.guildId, interaction.channelId)
         const subcommand = interaction.options.getSubcommand(true)
 
         switch (subcommand) {
         case 'clear':
-            if (!stickyMessage) {
+            if (!stickyMessage.interaction) {
                 await interaction.editReply({ content: 'No sticky message set for this channel' })
             } else {
-                await stickyMessage.deleteDocument()
+                discordBot.stickyManager.deleteStickyMessage(interaction.guildId, interaction.channelId)
                 await interaction.editReply({ content: 'Successfully cleared sticky message for this channel' })
             }
             break
@@ -81,15 +81,10 @@ export default class StickyCommand implements Command {
                 return
             }
 
-            if (!stickyMessage) {
-                await discordBot.databaseManager.setStickyMessage(interaction.guildId, interaction.channelId, {
-                    interaction: { content },
-                    intervalBetweenMessages: interval
-                })
-            } else {
-                await stickyMessage.set('interaction', { content })
-                await stickyMessage.set('intervalBetweenMessages', interval)
-            }
+            stickyMessage.interaction = { content }
+            stickyMessage.intervalBetweenMessages = interval
+
+            discordBot.stickyManager.setStickyMessage(interaction.guildId, interaction.channelId, stickyMessage)
 
             await interaction.editReply({ content: 'Successfully set sticky message for this channel' })
             break
@@ -97,7 +92,8 @@ export default class StickyCommand implements Command {
         case 'discohook': {
             const url = interaction.options.getString('url', true)
             const stickyInteraction = this.parseDiscohookURL(url).messages[0].data
-            await interaction.editReply(stickyInteraction)
+            await interaction.editReply('```js\n'+JSON.stringify(stickyInteraction, null, 2)+'\n```')
+            await interaction.followUp({...stickyInteraction, ephemeral: true})
 
             const interval = parseHumanDate(interaction.options.getString('interval') ?? '1 min')
             if (interval < 60_000) {
@@ -105,15 +101,10 @@ export default class StickyCommand implements Command {
                 return
             }
 
-            if (!stickyMessage) {
-                await discordBot.databaseManager.setStickyMessage(interaction.guildId, interaction.channelId, {
-                    interaction: stickyInteraction,
-                    intervalBetweenMessages: interval
-                })
-            } else {
-                await stickyMessage.set('interaction', stickyInteraction)
-                await stickyMessage.set('intervalBetweenMessages', interval)
-            }
+            stickyMessage.interaction = stickyInteraction
+            stickyMessage.intervalBetweenMessages = interval
+
+            discordBot.stickyManager.setStickyMessage(interaction.guildId, interaction.channelId, stickyMessage)
 
             await interaction.followUp({ content: 'Successfully set sticky message for this channel', ephemeral: true})
             break
@@ -122,7 +113,7 @@ export default class StickyCommand implements Command {
     }
 
     private parseDiscohookURL(url: string) {
-        const matches = url.match(/(?:data=)([a-zA-Z0-9/+]+=?)/)
+        const matches = url.match(/(?:data=)([a-zA-Z0-9/+-]+=?)/)
         if(!matches || (matches?.length ?? 0) <= 1) {
             throw new Error('Could not parse discohook url')
         }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import {AutocompleteInteraction, CommandInteraction, MessageAttachment} from 'discord.js'
 import {Command, IAutocompletableCommand} from './command'
 import {RESTPostAPIApplicationCommandsJSONBody} from 'discord-api-types'
@@ -67,13 +68,13 @@ export default class ServerConfigCommand implements Command, IAutocompletableCom
             return
         }
 
-        const guildConfig = await discordBot.databaseManager.getGuildConfigDocument(interaction.guildId)
+        const guildConfig = discordBot.databaseManager.getGuildConfigDocument(interaction.guildId)
 
         const subcommand = interaction.options.getSubcommand(true)
         if (subcommand == 'dump') {
             await interaction.editReply({ content: 'config dump', files: [
                 new MessageAttachment(
-                    Buffer.from(JSON.stringify(guildConfig.readOnlyValue(), null, 2)),
+                    Buffer.from(JSON.stringify(guildConfig, null, 2)),
                     'config_dump.json'
                 ),
             ]
@@ -94,7 +95,7 @@ export default class ServerConfigCommand implements Command, IAutocompletableCom
             await interaction.editReply({
                 content: stripIndent`
                     key: \`${key}\`
-                    value: \`${await guildConfig.get(key)}\`
+                    value: \`${guildConfig[key]}\`
                     description: ${metadata.description}
                     optional: ${metadata.optional}
                 `
@@ -103,7 +104,9 @@ export default class ServerConfigCommand implements Command, IAutocompletableCom
         }
         case 'set': {
             const value = interaction.options.getString('value', true)
-            await guildConfig.set(key, value)
+            guildConfig[key] = value
+            
+            discordBot.databaseManager.guildConfigCollection.storeDocument(interaction.guildId, guildConfig)
 
             await interaction.editReply({ content: `Successfully set \`${key}\` to \`${value}\`` })
             break
@@ -114,7 +117,10 @@ export default class ServerConfigCommand implements Command, IAutocompletableCom
                 return
             }
 
-            await guildConfig.set(key, undefined)
+            // @ts-ignore
+            guildConfig[key] = undefined
+
+            discordBot.databaseManager.guildConfigCollection.storeDocument(interaction.guildId, guildConfig)
 
             await interaction.editReply({ content: `Successfully unset \`${key}\`` })
             break

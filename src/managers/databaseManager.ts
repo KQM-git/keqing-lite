@@ -1,5 +1,5 @@
 import path from 'path'
-import {DocumentDatabase} from '../database/database'
+import { DocumentDatabase } from '../database/database'
 import { LiveInteraction } from '../models/LiveInteraction'
 
 export interface GuildConfigMetadataKeyData {
@@ -46,25 +46,9 @@ export const DefaultGuildConfig: () => GuildConfig = () => ({
 
 export class DatabaseManager {
     database = new DocumentDatabase(path.join(process.cwd(), 'db'))
-
     guildConfigCollection = this.database.getCollection<GuildConfig>('guildConfigs')
 
     getGuildConfigDocument(guildId: string) {
         return this.guildConfigCollection.getDocument(guildId, DefaultGuildConfig())
-    }
-
-    async getStickyMessage(guildId: string, channelId: string) {
-        const stickyMessage = this.database.getCollection<StickyMessage>(`stickyMessages/${guildId}`)
-            .getDocument(channelId, {})
-        
-        return await stickyMessage.get('interaction') ? stickyMessage : undefined
-    }
-    async setStickyMessage(guildId: string, channelId: string, message: StickyMessage) {
-        const stickyMessage = this.database.getCollection<StickyMessage>(`stickyMessages/${guildId}`)
-            .getDocument(channelId, {})
-
-        await stickyMessage.forceSync(message)
-
-        return stickyMessage
     }
 }

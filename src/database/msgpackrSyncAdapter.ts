@@ -1,10 +1,8 @@
 import { pack, unpack } from 'msgpackr'
 import fs from 'fs'
 import writeFileAtomicSync from 'write-file-atomic'
-import { SyncDBAdapter } from './adapter'
 
-
-export class MsgPackrSyncAdapter<T> implements SyncDBAdapter<T> {
+export class MsgPackSerialiser<T> {
     constructor(private filePath: string){}
 
     read(): T | undefined {
@@ -17,7 +15,11 @@ export class MsgPackrSyncAdapter<T> implements SyncDBAdapter<T> {
     }
 
     delete() {
-        if (!fs.existsSync(this.filePath)) return
+        if (!this.exists()) return
         fs.rmSync(this.filePath)
+    }
+
+    exists(): boolean {
+        return fs.existsSync(this.filePath)
     }
 }

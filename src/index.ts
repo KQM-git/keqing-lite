@@ -102,6 +102,7 @@ class DiscordBotHandler {
                     await this.stickyManager.messageReceived(message)
                 } catch (err: any) {
                     message.channel.send({ content: err.message })
+                    console.error(err)
                 }
             })
 

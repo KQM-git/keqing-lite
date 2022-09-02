@@ -25,7 +25,7 @@ export default class DumpTriggersCommand implements Command {
 
         let guildConfig: GuildConfig = DefaultGuildConfig()
         if (interaction.guildId) {
-            guildConfig = discordBot.databaseManager.getGuildConfigDocument(interaction.guildId).readOnlyValue()   
+            guildConfig = discordBot.databaseManager.getGuildConfigDocument(interaction.guildId)
         }
 
         const triggers = discordBot.liveTriggerManager.getAllLoadedTriggers()
