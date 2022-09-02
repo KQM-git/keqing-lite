@@ -113,7 +113,7 @@ export default class StickyCommand implements Command {
     }
 
     private parseDiscohookURL(url: string) {
-        const matches = url.match(/(?:data=)([a-zA-Z0-9/+-]+=?)/)
+        const matches = url.match(/(?:data=)([a-zA-Z0-9/+-_]+=?)/)
         if(!matches || (matches?.length ?? 0) <= 1) {
             throw new Error('Could not parse discohook url')
         }
