@@ -21,9 +21,9 @@ export default class BotInfoCommand implements Command {
             .setColor('PURPLE')
             .setThumbnail(discordBot.client.user?.avatarURL({ size: 1024 }) ?? '')
             
-            .addField('Developer', 'Paper (@Paper#1932)', true)
+            .addField('Developer', 'Paper#1932', true)
             .addField('Owner', '[Keqing Mains](https://discord.gg/keqing)', true)
-            .addField('Source', '[GitHub](https://github.com/KQMBot/keqing-lite)', true)
+            .addField('Links', '[Source Code](https://github.com/KQMBot/keqing-lite)\n[Privacy Policy](https://github.com/KQMBot/keqing-lite/blob/main/PRIVACY.md)\n[Terms of Service](https://github.com/KQMBot/keqing-lite/blob/main/TERMS.md)\n', true)
 
             .addField('Server Count', `${discordBot.client.guilds.cache.size}`, true)
             .addField('Latency', `${Date.now() - interaction.createdTimestamp}ms`, true)
