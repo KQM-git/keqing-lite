@@ -4,6 +4,7 @@ This document entails the privacy policy and agreement that you accept when addi
 ### Terminology
 * **Server Manager** - Anyone who has the ability to add a bot to a server or configure the bot for the server. This is usually an administrator or moderator
 * **Server Member** - Anyone who is a member of server to which one of the bots has been added
+* **Third-Party Services** - Any service that is not directly affiliated with Keqing Mains
 
 
 ## Data Collection
