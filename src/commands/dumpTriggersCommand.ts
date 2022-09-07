@@ -32,11 +32,11 @@ export default class DumpTriggersCommand implements Command {
         const triggerFile = triggers.map(trigger => {
             const errors: Error[] = []
 
-            trigger = injectConstants(trigger, {
-                TRIGGER_PREFIX: guildConfig.triggerPrefix
-            }, errors) as LiveTrigger
+            // trigger = injectConstants(trigger, {
+            //     TRIGGER_PREFIX: guildConfig.triggerPrefix
+            // }, errors) as LiveTrigger
 
-            return `${errors.length > 0 ? '(ℹ) ' : ''}${trigger.match}: "${trigger.description ?? 'No Description'}"`
+            return `${errors.length > 0 ? '(ℹ) ' : ''}${trigger.name}: "${trigger.description ?? 'No Description'}"`
         }).sort().join('\n')
 
         await interaction.editReply({

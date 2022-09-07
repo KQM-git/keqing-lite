@@ -2,9 +2,11 @@ import { ChannelId } from './LiveConfig'
 import { LiveInteraction, LiveInteractionPermissions } from './LiveInteraction'
 
 export interface LiveTrigger {
+    name?: string
+    description?: string
+
     match: string
     ignoreCase?: string
-    description?: string
 
     deleteTrigger?: boolean
     defer?: ChannelId | 'dm'

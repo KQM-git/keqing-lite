@@ -6,11 +6,16 @@ import { constantsFromObject, injectConstants, loadYaml } from '../utils'
 import { discordBot } from '..'
 import { MessageLiveInteraction } from '../models/MessageLiveInteraction'
 import { LiveTrigger } from '../models/LiveTrigger'
+import { FullOptions, Searcher } from 'fast-fuzzy'
 
+interface IndexedLiveTrigger extends LiveTrigger {
+    index: number
+}
 
 export class LiveTriggerManager {
     private prefixTriggerTemplateLiteral = '<[TRIGGER_PREFIX]>'
     private loadedTriggers: LiveTrigger[] = []
+    private searcher?: Searcher<IndexedLiveTrigger, FullOptions<IndexedLiveTrigger>>
 
     static liveTriggersDir = path.join(
         Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
@@ -22,12 +27,17 @@ export class LiveTriggerManager {
         return this.loadedTriggers
     }
 
+    searchLoadedTriggers(query: string) {
+        if (query.trim().length == 0) return this.loadedTriggers.map((x, i) => ({ index: i, ...x }))
+        return this.searcher?.search(query) ?? []
+    }
+
     loadTriggers(dir = '') {
-        if(dir.length == 0) {
+        if (dir.length == 0) {
             this.loadedTriggers = []
         }
-        
-        for(const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
+
+        for (const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
             const filePath = path.join(LiveTriggerManager.liveTriggersDir, dir, file)
             console.log(`Loading: ${path.join(dir, file)}`)
 
@@ -43,16 +53,22 @@ export class LiveTriggerManager {
                 discordBot.liveConstants,
                 []
             ) as LiveTrigger
-            
+            trigger.name = trigger.name ?? file.split('.')[0]
+
             console.log(`Match: ${trigger.match}. Loaded!`)
             this.loadedTriggers.push(trigger)
         }
+
+        this.searcher = new Searcher(this.loadedTriggers.map((x, i) => ({ index: i, ...x })), {
+            keySelector: (trigger) => trigger.name ?? '',
+            threshold: 0.3
+        })
     }
 
     async parseMessage(message: Message) {
         try {
             return this._parseMessage(message)
-        } catch(error) {
+        } catch (error) {
             console.log(error)
             message.reply('An error occurred while trying to parse the LiveInteraction. Please ping one of the Bot Admins in the KQM server.')
         }
@@ -73,9 +89,9 @@ export class LiveTriggerManager {
             const regex = new RegExp(match, `g${trigger.ignoreCase ? 'i' : ''}`)
             const matches = regex.exec(content) ?? []
             // console.log(`Tested: ${match} against ${content}; Matches: ${matches}`)
-            
+
             if (matches.length == 0) continue
-            
+
             // Disallow people with the blacklist role
             if (guildConfig.blacklistRoleId && message.member.roles.cache.has(guildConfig.blacklistRoleId)) {
                 if (!guildConfig.blacklistReply) return
@@ -85,7 +101,7 @@ export class LiveTriggerManager {
             }
 
             const matchConstants: Record<string, unknown> = { '$MATCH': [] }
-            
+
             let index = 0
             for (const match of matches) {
                 (matchConstants['$MATCH'] as string[])[index++] = match
@@ -108,14 +124,14 @@ export class LiveTriggerManager {
                     if (trigger.channels.whitelist.filter(x => channelIds.includes(x)).length == 0) continue
                 }
             }
-            
+
             const primaryInteraction = discordBot.liveInteractionManager.resolveLiveInteraction(
                 trigger.interaction,
                 { ...constantsFromObject(message.member), ...matchConstants }
             )
 
             if (!primaryInteraction) {
-                await message.reply({content: 'Unable to resolve interaction: ' + trigger.interaction})
+                await message.reply({ content: 'Unable to resolve interaction: ' + trigger.interaction })
                 continue
             }
 
@@ -144,17 +160,17 @@ export class LiveTriggerManager {
                         trigger.deferInteraction,
                         { ...constantsFromObject(message.member), ...matchConstants }
                     )
-        
+
                     if (!secondaryInteraction) {
-                        await message.reply({content: 'Unable to resolve interaction: ' + trigger.interaction})
+                        await message.reply({ content: 'Unable to resolve interaction: ' + trigger.interaction })
                         continue
                     }
-        
+
                     const secondaryMessage = new MessageLiveInteraction(secondaryInteraction)
                     const secondaryPayload = secondaryMessage.toMessage()
 
                     await deferChannel.send(secondaryPayload)
-                    
+
                     if (trigger.deleteTrigger && message.deletable) {
                         await message.delete()
                         await message.channel.send(primaryPayload)
@@ -176,7 +192,7 @@ export class LiveTriggerManager {
                     await message.reply(primaryPayload)
                 }
             }
-        } 
+        }
     }
 
 }

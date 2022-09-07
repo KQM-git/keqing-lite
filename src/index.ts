@@ -1,24 +1,24 @@
 // Require the necessary discord.js classes
-import {REST} from '@discordjs/rest'
+import { REST } from '@discordjs/rest'
 import fsp from 'fs/promises'
 import AdmZip from 'adm-zip'
-import {RESTPatchAPIApplicationCommandJSONBody, Routes} from 'discord-api-types/v9'
-import {Client, ExcludeEnum, GuildMember, Intents} from 'discord.js'
-import {https} from 'follow-redirects'
-import {Constants} from './constants'
-import {LocalCommandManager} from './managers/commandManager'
-import {LiveCommandManager} from './managers/liveCommandManager'
+import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
+import { Client, ExcludeEnum, GuildMember, Intents } from 'discord.js'
+import { https } from 'follow-redirects'
+import { Constants } from './constants'
+import { LocalCommandManager } from './managers/commandManager'
+import { LiveCommandManager } from './managers/liveCommandManager'
 import fs from 'fs'
-import {LocalInteractionManager} from './managers/interactionManager'
-import {LiveInteractionManager} from './managers/liveInteractionManager'
+import { LocalInteractionManager } from './managers/interactionManager'
+import { LiveInteractionManager } from './managers/liveInteractionManager'
 import yaml from 'js-yaml'
 import path from 'path'
-import {hasPermission, loadYaml} from './utils'
-import {LiveConfig} from './models/LiveConfig'
-import {LiveTriggerManager} from './managers/triggerManager'
-import {IAutocompletableCommand, IExecutableCommand} from './commands/command'
-import {ActivityTypes} from 'discord.js/typings/enums'
-import {DatabaseManager} from './managers/databaseManager'
+import { hasPermission, loadYaml } from './utils'
+import { LiveConfig } from './models/LiveConfig'
+import { LiveTriggerManager } from './managers/triggerManager'
+import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
+import { ActivityTypes } from 'discord.js/typings/enums'
+import { DatabaseManager } from './managers/databaseManager'
 import { StickyManager } from './managers/stickyManager'
 
 
@@ -36,8 +36,9 @@ class DiscordBotHandler {
         ],
         retryLimit: 2,
         restGlobalRateLimit: 50,
+        allowedMentions: { repliedUser: true }
     })
-    restClient = new REST({version: '9'}).setToken(Constants.DISCORD_BOT_TOKEN)
+    restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
 
     localCommandManager = new LocalCommandManager()
     liveCommandManager = new LiveCommandManager()
@@ -100,7 +101,7 @@ class DiscordBotHandler {
                     await this.liveTriggerManager.parseMessage(message)
                     await this.stickyManager.messageReceived(message)
                 } catch (err: any) {
-                    message.channel.send({ content: err.message })
+                    message.channel.send({ embeds: [{ title: 'Error', description: err.message }] })
                     console.error(err)
                 }
             })
@@ -140,16 +141,16 @@ class DiscordBotHandler {
                         const executableInteractionInstance = new ExecutableInteractionClass()
                         await executableInteractionInstance.execute(interaction)
                     }
-                } catch (error) {
+                } catch (error: any) {
                     if (!interaction.isCommand() && !interaction.isSelectMenu() && !interaction.isMessageComponent()) {
                         console.error(error)
                         return
                     }
 
                     if (interaction.replied || interaction.deferred) {
-                        await interaction.editReply({content: '**ERROR**: ' + error})
+                        await interaction.editReply({ embeds: [{ title: 'Error', description: error.message }] })
                     } else {
-                        await interaction.reply({content: `**ERROR:** ${error}`, ephemeral: true})
+                        await interaction.reply({ embeds: [{ title: 'Error', description: error.message }], ephemeral: true })
                     }
                 }
             })
@@ -272,14 +273,14 @@ class DiscordBotHandler {
             console.log(`Registering Command: ${command.name}, AC ${command.autocomplete ?? false}`)
         }
 
-        await this.restClient.put(Routes.applicationCommands(Constants.DISCORD_CLIENT_ID), {body: Object.values(hashSet)})
+        await this.restClient.put(Routes.applicationCommands(Constants.DISCORD_CLIENT_ID), { body: Object.values(hashSet) })
     }
 
     async downloadAndExtractLiveCommandRepo() {
         const downloadFilePath = Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR + '.zip'
 
         if (fs.existsSync(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR))
-            await fsp.rm(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, {recursive: true, force: true})
+            await fsp.rm(Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR, { recursive: true, force: true })
 
         if (fs.existsSync(downloadFilePath))
             await fsp.rm(downloadFilePath)
