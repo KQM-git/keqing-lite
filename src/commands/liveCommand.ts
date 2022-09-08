@@ -10,25 +10,18 @@ export default class LiveCommand implements Command, IAutocompletableCommand {
     async handleAutocomplete(interaction: AutocompleteInteraction<CacheType>): Promise<void> {
         const focusedOption = interaction.options.getFocused(true)
         const commandName = interaction.commandName
-        if (focusedOption.name == 'subcommand' && typeof focusedOption.value == 'string') {
-            const subcommands = discordBot.liveCommandManager.subcommands.get(commandName)
-            if (!subcommands) return
-            
-            const choices: string[] = []
-            for (const interactionName of subcommands) {
-                if (!interactionName.includes(focusedOption.value)) continue
-                choices.push(interactionName)
-            }
-
-            return interaction.respond(
-                choices
-                    .sort((a, b) => a.length - b.length)
-                    .map(x => ({ name: x, value: x }))
-                    .slice(0, 25)
-            )
-        } else {
-            return
+        
+        if (focusedOption.name !== 'subcommand' || typeof focusedOption.value !== 'string') {
+            return interaction.respond([])
         }
+
+        const subcommands = discordBot.liveCommandManager.searchSubcommands(commandName, focusedOption.value)
+            
+        return interaction.respond(
+            subcommands
+                .map(x => ({ name: `${x.name} - ${x.description}`, value: x.id }))
+                .slice(0, 25)
+        )
     }
     
     getCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody {
@@ -53,14 +46,18 @@ export default class LiveCommand implements Command, IAutocompletableCommand {
         }
         
         if(!liveCommandName || liveCommandName == ''){
-            await interaction.reply('**ERROR:** Unable to resolve live command name')
-            return
+            throw new Error('Unable to parse resolve live command name')
         }
         
         const subcommand = interaction.options.getString('subcommand') ?? undefined
-        const liveCommand: any = discordBot.liveCommandManager.resolveLiveCommand(liveCommandName, subcommand, constants)
+        const liveCommand: any = discordBot.liveCommandManager.resolveLiveCommand(
+            liveCommandName,
+            subcommand,
+            constants
+        )
+        
         if (!liveCommand) {
-            throw new Error('Unable to parse resolve live command ' + liveCommandName + ' subcommand: '+ subcommand)
+            throw new Error(`Unable to parse resolve live command ${liveCommandName} subcommand: ${subcommand}`)
         }
 
         if (liveCommand.channels) {

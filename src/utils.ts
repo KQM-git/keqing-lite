@@ -192,7 +192,7 @@ export function keysToUpperCaseRecursive(obj: any): any {
 }
 
 export function cleanString(str: string): string {
-    return str.split('.')[0].replace(/[^a-zA-Z]/gi, '').toLowerCase()
+    return str.split('.')[0].replace(/[^-_a-zA-Z]/gi, '').toLowerCase()
 }
 
 export function getValuesRecursive(obj: any): any[] {

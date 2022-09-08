@@ -39,8 +39,7 @@ export class LiveTriggerManager {
 
         for (const file of fs.readdirSync(path.join(LiveTriggerManager.liveTriggersDir, dir))) {
             const filePath = path.join(LiveTriggerManager.liveTriggersDir, dir, file)
-            console.log(`Loading: ${path.join(dir, file)}`)
-
+            
             if (fs.lstatSync(filePath).isDirectory()) {
                 this.loadTriggers(path.join(dir, file))
                 continue
@@ -55,7 +54,7 @@ export class LiveTriggerManager {
             ) as LiveTrigger
             trigger.name = trigger.name ?? file.split('.')[0]
 
-            console.log(`Match: ${trigger.match}. Loaded!`)
+            console.log(`Trigger: ${trigger.match}. Loaded from ${path.join(dir, file)}`)
             this.loadedTriggers.push(trigger)
         }
 
