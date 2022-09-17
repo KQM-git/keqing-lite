@@ -42,6 +42,7 @@ export class LiveCommandManager {
     getLiveCommands(): RESTPatchAPIApplicationCommandJSONBody[] {
         this.loadedCommands.clear()
         this.subcommandInfos = {}
+        this.searchers = {}
 
         this.loadLiveCommands()
 
@@ -118,11 +119,10 @@ export class LiveCommandManager {
             }
 
             if (dirs.length > 0) {
-                dirs.shift()
-                const subcommandId = path.join(...dirs, cleanString(file))
+                const subcommandId = path.join(...dirs.slice(1), cleanString(file))
                 let subcommandName = cleanString(file)
                 if (subcommandName == 'index') {
-                    subcommandName = dirs.pop() ?? subcommandName
+                    subcommandName = dirs[dirs.length - 1] ?? subcommandName
                 }
 
                 const value: any = yaml.load(
