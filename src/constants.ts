@@ -6,6 +6,10 @@ class _Constants {
         dotenv.config()
     }
 
+    get FORWARDER_TOKEN(): string {
+        return this.fromEnvConfig('FORWARDER_TOKEN')
+    }
+
     get BOT_ADMINS(): string[] {
         return this.fromEnvConfig('BOT_ADMINS').split(' ')
     }

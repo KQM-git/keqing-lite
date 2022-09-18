@@ -2,8 +2,8 @@
 import { REST } from '@discordjs/rest'
 import fsp from 'fs/promises'
 import AdmZip from 'adm-zip'
-import { RESTPatchAPIApplicationCommandJSONBody, Routes } from 'discord-api-types/v9'
-import { Client, ExcludeEnum, GuildMember, Intents } from 'discord.js'
+import { RESTPatchAPIApplicationCommandJSONBody, Routes, APIMessage } from 'discord-api-types/v9'
+import { Client, ExcludeEnum, GuildMember, Intents, Message } from 'discord.js'
 import { https } from 'follow-redirects'
 import { Constants } from './constants'
 import { LocalCommandManager } from './managers/commandManager'
@@ -17,27 +17,28 @@ import { hasPermission, loadYaml } from './utils'
 import { LiveConfig } from './models/LiveConfig'
 import { LiveTriggerManager } from './managers/triggerManager'
 import { IAutocompletableCommand, IExecutableCommand } from './commands/command'
-import { ActivityTypes } from 'discord.js/typings/enums'
+import { ActivityTypes, MessageTypes } from 'discord.js/typings/enums'
 import { DatabaseManager } from './managers/databaseManager'
 import { StickyManager } from './managers/stickyManager'
 
 
 class DiscordBotHandler {
+    messageForwarderClient?: Client
+
     client = new Client({
         intents: [
             Intents.FLAGS.GUILDS,
             Intents.FLAGS.GUILD_MESSAGES,
-            Intents.FLAGS.GUILD_MESSAGE_REACTIONS
         ],
         partials: [
             'MESSAGE',
-            'CHANNEL',
-            'REACTION'
+            'CHANNEL'
         ],
         retryLimit: 2,
         restGlobalRateLimit: 50,
         allowedMentions: { repliedUser: true }
     })
+
     restClient = new REST({ version: '9' }).setToken(Constants.DISCORD_BOT_TOKEN)
 
     localCommandManager = new LocalCommandManager()
@@ -56,6 +57,44 @@ class DiscordBotHandler {
 
     constructor() {
         console.log('Initialized a new Bot Handler')
+    }
+
+    async loadForwarders() {
+        if(!Constants.FORWARDER_TOKEN) return
+
+        this.messageForwarderClient = new Client({
+            sweepers: {
+                messages: {
+                    interval: 60,
+                    lifetime: 0
+                }
+            },
+            intents: [
+                Intents.FLAGS.GUILDS,
+                Intents.FLAGS.GUILD_MESSAGES,
+            ],
+            partials: [
+                'MESSAGE',
+                'CHANNEL'
+            ],
+            retryLimit: 2,
+            restGlobalRateLimit: 50,
+            allowedMentions: {}
+        }).once('ready', _ => console.log('Forwarder READY!'))
+
+        this.messageForwarderClient.ws.on('MESSAGE_CREATE', async (data: APIMessage) => {
+            try {
+                if (!data.guild_id || !this.client.guilds.cache.has(data.guild_id)) return
+                
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                await this.liveTriggerManager.parseMessage(new Message(this.client, data))
+            } catch (err: any) {
+                console.error(err)
+            }
+        })
+
+        await this.messageForwarderClient.login(Constants.FORWARDER_TOKEN)
     }
 
     async initialize() {
@@ -97,13 +136,16 @@ class DiscordBotHandler {
 
             this.client.on('messageCreate', async message => {
                 try {
-                    // console.log('messageCreate')
-                    await this.liveTriggerManager.parseMessage(message)
                     await this.stickyManager.messageReceived(message)
                 } catch (err: any) {
                     message.channel.send({ embeds: [{ title: 'Error', description: err.message }] })
                     console.error(err)
                 }
+            })
+
+            this.client.on('guildDelete', async guild => {
+                const forwarderGuild = await this.messageForwarderClient?.guilds.fetch(guild.id)
+                await forwarderGuild?.leave()
             })
 
             this.client.on('interactionCreate', async interaction => {
@@ -161,7 +203,7 @@ class DiscordBotHandler {
 
             // Login to Discord with your client's token
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
-
+            await this.loadForwarders()
         } catch (error: any) {
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
             console.error(error)

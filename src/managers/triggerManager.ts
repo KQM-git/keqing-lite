@@ -49,8 +49,7 @@ export class LiveTriggerManager {
 
             const trigger = loadYaml(
                 fs.readFileSync(filePath).toString(),
-                discordBot.liveConstants,
-                []
+                {}, []
             ) as LiveTrigger
             trigger.name = trigger.name ?? file.split('.')[0]
 
