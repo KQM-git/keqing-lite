@@ -50,7 +50,7 @@ export class LiveTriggerManager {
 
             const trigger = loadYaml(
                 fs.readFileSync(filePath).toString(),
-                {}, []
+                { TRIGGER_PREFIX: this.prefixTriggerTemplateLiteral }, []
             ) as LiveTrigger
             trigger.name = trigger.name ?? file.split('.')[0]
 
@@ -84,14 +84,11 @@ export class LiveTriggerManager {
         if (!message.member || message.author.bot || !message.guildId) return
 
         const guildConfig = discordBot.databaseManager.getGuildConfigDocument(message.guildId)
-        const triggerPrefix = guildConfig.triggerPrefix
+        const triggerPrefix = guildConfig.triggerPrefix.replace(/[#-}]/g, '\\$&')
 
         const content = message.content
         for (let trigger of this.loadedTriggers) {
-            const match = injectConstants(trigger.match, {
-                TRIGGER_PREFIX: `^${triggerPrefix.replace(/[#-}]/g, '\\$&')}`
-            }, []) as string
-
+            const match = trigger.match.replace(this.prefixTriggerTemplateLiteral, `^${triggerPrefix}`)
             const regex = this.getRegex(match, `${trigger.ignoreCase ? 'i' : ''}`)
             const matches = regex.exec(content) ?? []
             // console.log(`Tested: ${match} against ${content}; Matches: ${matches}`)

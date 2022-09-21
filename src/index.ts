@@ -102,8 +102,9 @@ class DiscordBotHandler {
             await this.loadCommands()
 
             // When the client is ready, run this code (only once)
-            this.client.once('ready', () => {
+            this.client.once('ready', async () => {
                 console.log('Ready!')
+                await this.loadForwarders()
             })
 
             this.client.on('threadUpdate', async (oldThread, newThread) => {
@@ -203,7 +204,6 @@ class DiscordBotHandler {
 
             // Login to Discord with your client's token
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
-            await this.loadForwarders()
         } catch (error: any) {
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
             console.error(error)
