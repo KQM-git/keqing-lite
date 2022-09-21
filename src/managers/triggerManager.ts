@@ -16,6 +16,7 @@ export class LiveTriggerManager {
     private prefixTriggerTemplateLiteral = '<[TRIGGER_PREFIX]>'
     private loadedTriggers: LiveTrigger[] = []
     private searcher?: Searcher<IndexedLiveTrigger, FullOptions<IndexedLiveTrigger>>
+    private triggerRegexes: Record<string, RegExp> = {}
 
     static liveTriggersDir = path.join(
         Constants.LIVE_COMMANDS_REPO_EXTRACT_DIR,
@@ -65,11 +66,18 @@ export class LiveTriggerManager {
 
     async parseMessage(message: Message) {
         try {
-            return this._parseMessage(message)
+            return await this._parseMessage(message)
         } catch (error) {
             console.log(error)
             message.reply('An error occurred while trying to parse the LiveInteraction. Please ping one of the Bot Admins in the KQM server.')
         }
+    }
+
+    private getRegex(match: string, options: string) {
+        if(!this.triggerRegexes[match])
+            this.triggerRegexes[match] = new RegExp(match, options)
+
+        return this.triggerRegexes[match]
     }
 
     private async _parseMessage(message: Message) {
@@ -84,7 +92,7 @@ export class LiveTriggerManager {
                 TRIGGER_PREFIX: `^${triggerPrefix.replace(/[#-}]/g, '\\$&')}`
             }, []) as string
 
-            const regex = new RegExp(match, `g${trigger.ignoreCase ? 'i' : ''}`)
+            const regex = this.getRegex(match, `${trigger.ignoreCase ? 'i' : ''}`)
             const matches = regex.exec(content) ?? []
             // console.log(`Tested: ${match} against ${content}; Matches: ${matches}`)
 
