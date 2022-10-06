@@ -1,6 +1,7 @@
 import { MessageSelectOptionData, MessageEmbedOptions, MessageButtonOptions } from 'discord.js'
 
 export interface LiveInteractionPermissions {
+    serverPerm?: string
     blacklist?: string[]
     whitelist?: string[]
 }

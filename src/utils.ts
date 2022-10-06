@@ -6,13 +6,15 @@ import yaml from 'js-yaml'
 import {all, create} from 'mathjs'
 import {Constants} from './constants'
 import { LiveInteractionPermissions } from './models/LiveInteraction'
+import genshinDb from 'genshin-db'
 
 const utilityConstants = {
     getValuesRecursive,
     keysToUpperCaseRecursive,
     cleanString,
     randomFromList,
-    randomNumberBetween
+    randomNumberBetween,
+    genshinDb
 }
 
 function substituteTemplateLiterals(str: string, constants: Record<string, unknown>, errors: unknown[]): string {
@@ -132,6 +134,10 @@ export function hasPermission(permissions: LiveInteractionPermissions | undefine
 
     if (!permissions) {
         return fallbackRolePermission ? member.permissions.has(fallbackRolePermission) : true
+    }
+
+    if (permissions.serverPerm) {
+        return member.permissions.has(permissions.serverPerm)
     }
 
     if (!member.roles || !member.roles.cache) {
