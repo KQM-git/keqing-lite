@@ -139,14 +139,18 @@ class DiscordBotHandler {
                 try {
                     await this.stickyManager.messageReceived(message)
                 } catch (err: any) {
-                    message.channel.send({ embeds: [{ title: 'Error', description: err.message }] })
+                    try { await message.channel.send({ embeds: [{ title: 'Error', description: err.message }] }) } catch {}
                     console.error(err)
                 }
             })
 
             this.client.on('guildDelete', async guild => {
-                const forwarderGuild = await this.messageForwarderClient?.guilds.fetch(guild.id)
-                await forwarderGuild?.leave()
+                try {
+                    const forwarderGuild = await this.messageForwarderClient?.guilds.fetch(guild.id)
+                    await forwarderGuild?.leave()
+                } catch (err: any) {
+                    console.error(err)
+                }
             })
 
             this.client.on('interactionCreate', async interaction => {
@@ -190,10 +194,14 @@ class DiscordBotHandler {
                         return
                     }
 
-                    if (interaction.replied || interaction.deferred) {
-                        await interaction.editReply({ embeds: [{ title: 'Error', description: error.message }] })
-                    } else {
-                        await interaction.reply({ embeds: [{ title: 'Error', description: error.message }], ephemeral: true })
+                    try {
+                        if (interaction.replied || interaction.deferred) {
+                            await interaction.editReply({ embeds: [{ title: 'Error', description: error.message }] })
+                        } else {
+                            await interaction.reply({ embeds: [{ title: 'Error', description: error.message }], ephemeral: true })
+                        }
+                    } catch (err: any) {
+                        console.error(err)
                     }
                 }
             })
@@ -205,7 +213,7 @@ class DiscordBotHandler {
             // Login to Discord with your client's token
             await this.client.login(Constants.DISCORD_BOT_TOKEN)
         } catch (error: any) {
-            await this.client.login(Constants.DISCORD_BOT_TOKEN)
+            console.log('FATAL ERROR LOGGED')
             console.error(error)
             this.client.destroy()
             process.exit(1)
